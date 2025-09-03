@@ -1,0 +1,49 @@
+package com.github.kzhunmax.jobsearch.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "jobs", indexes = {
+        @Index(columnList = "title", name = "job_title_index")
+})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Job extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(nullable = false)
+    private String company;
+
+    @Column(nullable = false)
+    private String location;
+
+    @Column(nullable = false)
+    private Double salary;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "posted_by_id", nullable = false)
+    private User postedBy;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<JobApplication> applications = new HashSet<>();
+}
