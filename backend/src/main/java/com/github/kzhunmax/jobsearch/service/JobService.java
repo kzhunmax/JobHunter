@@ -7,19 +7,25 @@ import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class JobService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
+    private final PagedResourcesAssembler<JobResponseDTO> pagedAssembler;
 
+    @Transactional
     public JobResponseDTO createJob(JobRequestDTO dto, String username) {
         User user = findUserByUsername(username);
         Job job = buildJobFromDTO(dto, user);
@@ -88,16 +94,19 @@ public class JobService {
         jobRepository.save(job);
     }
 
-    @Transactional
-    public Page<JobResponseDTO> getAllActiveJobs(Pageable pageable) {
-        return jobRepository.findByActiveTrue(pageable)
+    @Transactional(readOnly = true)
+    public PagedModel<EntityModel<JobResponseDTO>> getAllActiveJobs(Pageable pageable) {
+        Page<JobResponseDTO> jobPage =  jobRepository.findByActiveTrue(pageable)
                 .map(this::toJobResponseDTO);
+        return pagedAssembler.toModel(jobPage, EntityModel::of);
     }
 
-    @Transactional
-    public Page<JobResponseDTO> getJobsByRecruiter(String username, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public PagedModel<EntityModel<JobResponseDTO>> getJobsByRecruiter(String username, Pageable pageable) {
         User recruiter = findUserByUsername(username);
-        return jobRepository.findByPostedBy(recruiter, pageable)
+        Page<JobResponseDTO> jobPage = jobRepository.findByPostedBy(recruiter, pageable)
                 .map(this::toJobResponseDTO);
+
+        return pagedAssembler.toModel(jobPage, EntityModel::of);
     }
 }

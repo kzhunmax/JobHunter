@@ -67,7 +67,8 @@ public class AuthController {
 
         if (jwtService.isTokenValid(refreshToken, userDetails)) {
             String newAccessToken = jwtService.generateToken(userDetails);
-            return ApiResponse.success(new JwtResponse(newAccessToken, refreshToken), MDC.get(REQUEST_ID_MDC_KEY));
+            String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+            return ApiResponse.success(new JwtResponse(newAccessToken, newRefreshToken), MDC.get(REQUEST_ID_MDC_KEY));
         } else {
             return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", MDC.get(REQUEST_ID_MDC_KEY));
         }

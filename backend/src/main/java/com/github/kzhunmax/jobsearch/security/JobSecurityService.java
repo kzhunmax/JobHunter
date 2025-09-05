@@ -10,13 +10,16 @@ import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class JobSecurityService {
     private final JobRepository jobRepository;
     private final JobApplicationRepository jobApplicationRepository;
 
+    @Transactional(readOnly = true)
     public boolean isJobOwner(Long jobId, Authentication authentication) {
         if (!isAuthenticated(authentication)) {
             return false;
@@ -25,6 +28,7 @@ public class JobSecurityService {
         return isJobOwner(job, getUsername(authentication));
     }
 
+    @Transactional(readOnly = true)
     public boolean canUpdateApplication(Long applicationId, ApplicationStatus status, Authentication authentication) {
         if (!isAuthenticated(authentication)) {
             return false;

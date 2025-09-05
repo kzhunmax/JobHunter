@@ -6,7 +6,7 @@ import com.github.kzhunmax.jobsearch.model.Role;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.validator.UserRegistrationValidator;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

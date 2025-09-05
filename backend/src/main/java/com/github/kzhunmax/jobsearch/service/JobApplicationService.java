@@ -13,7 +13,7 @@ import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
