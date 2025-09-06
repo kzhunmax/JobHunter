@@ -13,6 +13,9 @@ import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +29,7 @@ public class JobApplicationService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
     private final JobApplicationMapper jobApplicationMapper;
+    private final PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler;
 
     @Transactional
     public JobApplicationResponseDTO applyToJob(Long jobId, String username) {
@@ -38,10 +42,10 @@ public class JobApplicationService {
     }
 
     @Transactional
-    public Page<JobApplicationResponseDTO> getApplicationsForJob(Long jobId, Pageable pageable) {
+    public PagedModel<EntityModel<JobApplicationResponseDTO>> getApplicationsForJob(Long jobId, Pageable pageable) {
         Job job = findJobById(jobId);
-        Page<JobApplication> application = jobApplicationRepository.findByJob(job, pageable);
-        return application.map(jobApplicationMapper::toDto);
+        Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository.findByJob(job, pageable).map(jobApplicationMapper::toDto);
+        return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
     @Transactional
@@ -53,10 +57,10 @@ public class JobApplicationService {
     }
 
     @Transactional
-    public Page<JobApplicationResponseDTO> getApplicationsByCandidate(String username, Pageable pageable) {
+    public PagedModel<EntityModel<JobApplicationResponseDTO>> getApplicationsByCandidate(String username, Pageable pageable) {
         User candidate = findUserByUsername(username);
-        Page<JobApplication> application = jobApplicationRepository.findByCandidate(candidate, pageable);
-        return application.map(jobApplicationMapper::toDto);
+        Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository.findByCandidate(candidate, pageable).map(jobApplicationMapper::toDto);
+        return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
     private Job findJobById(Long jobId) {

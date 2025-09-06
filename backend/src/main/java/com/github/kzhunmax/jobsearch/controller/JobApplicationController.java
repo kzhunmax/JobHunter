@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -28,13 +30,13 @@ public class JobApplicationController {
 
     @GetMapping("/job/{jobId}")
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication) or hasRole('ADMIN')")
-    public ResponseEntity<Page<JobApplicationResponseDTO>> getApplicationForJob(@PathVariable Long jobId, Pageable pageable) {
+    public ResponseEntity<PagedModel<EntityModel<JobApplicationResponseDTO>>> getApplicationForJob(@PathVariable Long jobId, Pageable pageable) {
         return ResponseEntity.ok(jobApplicationService.getApplicationsForJob(jobId, pageable));
     }
 
     @GetMapping("/my-applications")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Page<JobApplicationResponseDTO>> getMyApplications(Authentication authentication, Pageable pageable) {
+    public ResponseEntity<PagedModel<EntityModel<JobApplicationResponseDTO>>> getMyApplications(Authentication authentication, Pageable pageable) {
         String username = authentication.getName();
         return ResponseEntity.ok(jobApplicationService.getApplicationsByCandidate(username, pageable));
     }
