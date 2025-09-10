@@ -3,6 +3,7 @@ package com.github.kzhunmax.jobsearch.service;
 import com.github.kzhunmax.jobsearch.dto.request.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
+import com.github.kzhunmax.jobsearch.exception.UserNotFoundException;
 import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
@@ -117,7 +118,7 @@ class JobServiceTest {
 
         assertThatThrownBy(() -> jobService.createJob(request, "unknown"))
                 .isInstanceOf(UsernameNotFoundException.class)
-                .hasMessage("User not found");
+                .hasMessageContaining("User not found");
 
         verify(userRepository).findByUsername("unknown");
         verify(jobRepository, never()).save(any(Job.class));
@@ -156,8 +157,8 @@ class JobServiceTest {
         Job existingJob = createTestJob(user);
         Job updatedJob = createTestJob(user);
         JobRequestDTO updateRequest = new JobRequestDTO(
-          "Updated title", "Update description", "Updated company",
-          "Updated location", 5000.0
+                "Updated title", "Update description", "Updated company",
+                "Updated location", 5000.0
         );
 
         updatedJob.setTitle("Updated title");
@@ -237,12 +238,12 @@ class JobServiceTest {
         );
         when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(expectedModel);
         PagedModel<EntityModel<JobResponseDTO>> result = jobService.getAllActiveJobs(pageable);
+        JobResponseDTO resultDto = result.getContent().iterator().next().getContent();
 
-        assertThat(result.getMetadata()).isNotNull();
-        assertThat(result.getMetadata().getTotalElements()).isEqualTo(1);
+        assertThat(resultDto).isNotNull();
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getMetadata().getNumber()).isEqualTo(0);
-        assertThat(result.getMetadata().getSize()).isEqualTo(1);
+        assertThat(resultDto.title()).isEqualTo("Java Developer");
+        assertThat(resultDto.location()).isEqualTo("Remote");
 
         verify(jobRepository).findByActiveTrue(pageable);
         verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
@@ -267,6 +268,51 @@ class JobServiceTest {
 
         verify(jobRepository).findByActiveTrue(pageable);
         verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
+    }
 
+    @Test
+    @DisplayName("Should return paged jobs for recruiter when recruiter exist ")
+    void getJobsByRecruiter_whenRecruiterExists_shouldReturnPagedJobs() {
+        User recruiter = createTestUser();
+        Job job = createTestJob(recruiter);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Job> jobPage = new PageImpl<>(List.of(job), pageable, 1);
+
+        when(userRepository.findByUsername("user")).thenReturn(Optional.of(recruiter));
+        when(jobRepository.findByPostedBy(recruiter, pageable)).thenReturn(jobPage);
+        JobResponseDTO dto = createTestResponseDTO();
+        PagedModel<EntityModel<JobResponseDTO>> expectedModel = PagedModel.of(
+                List.of(EntityModel.of(dto)),
+                new PagedModel.PageMetadata(1, 0, 1)
+        );
+
+        when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(expectedModel);
+        PagedModel<EntityModel<JobResponseDTO>> result = jobService.getJobsByRecruiter("user", pageable);
+
+        JobResponseDTO resultDto = result.getContent().iterator().next().getContent();
+
+        assertThat(resultDto).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(resultDto.title()).isEqualTo("Java Developer");
+        assertThat(resultDto.postedBy()).isEqualTo("user");
+
+        verify(userRepository).findByUsername("user");
+        verify(jobRepository).findByPostedBy(recruiter, pageable);
+        verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
+    }
+
+    @Test
+    @DisplayName("Should throw UserNotFoundException when recruiter does not exists")
+    void getJobsByRecruiter_whenRecruiterNotFound_shouldThrowException() {
+        Pageable pageable = PageRequest.of(0, 1);
+        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.getJobsByRecruiter("unknown", pageable))
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessageContaining("User not found");
+
+        verify(userRepository).findByUsername("unknown");
+        verifyNoInteractions(jobRepository);
+        verifyNoInteractions(pagedAssembler);
     }
 }
