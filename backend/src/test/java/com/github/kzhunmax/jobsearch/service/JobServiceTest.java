@@ -3,15 +3,15 @@ package com.github.kzhunmax.jobsearch.service;
 import com.github.kzhunmax.jobsearch.dto.request.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
-import com.github.kzhunmax.jobsearch.exception.UserNotFoundException;
 import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,6 +36,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Tests for the Job Service")
 class JobServiceTest {
+
+    private static final String TEST_USERNAME = "user";
+    private static final Long TEST_ID = 1L;
+    private static final Long NON_EXISTENT_ID = 99L;
+    private static final String NON_EXISTENT_USERNAME = "unknown";
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found";
+    private static final String JOB_NOT_FOUND_MESSAGE = "Job with id %d not found";
+
     @Mock
     private JobRepository jobRepository;
 
@@ -60,14 +68,14 @@ class JobServiceTest {
 
     private User createTestUser() {
         User user = new User();
-        user.setUsername("user");
-        user.setId(1L);
+        user.setUsername(TEST_USERNAME);
+        user.setId(TEST_ID);
         return user;
     }
 
     private Job createTestJob(User user) {
         return Job.builder()
-                .id(1L)
+                .id(TEST_ID)
                 .title("Java Developer")
                 .description("3 years of experience")
                 .company("BigTech")
@@ -80,239 +88,362 @@ class JobServiceTest {
 
     private JobResponseDTO createTestResponseDTO() {
         return new JobResponseDTO(
-                1L,
+                TEST_ID,
                 "Java Developer",
                 "3 years of experience",
                 "BigTech",
                 "Remote",
                 3500.0,
                 true,
-                "user"
+                TEST_USERNAME
         );
     }
 
-    @Test
-    @DisplayName("Should create and return a job when user exists")
-    void createJob_whenUserExists_thenShouldCreateAndReturnJob() {
-        JobRequestDTO request = createTestRequest();
-        User user = createTestUser();
-        Job job = createTestJob(user);
-        JobResponseDTO expectedResponse = createTestResponseDTO();
-
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
-        when(jobRepository.save(any(Job.class))).thenReturn(job);
-
-        JobResponseDTO result = jobService.createJob(request, "user");
-
-        assertThat(result).isEqualTo(expectedResponse);
-        verify(userRepository).findByUsername("user");
-        verify(jobRepository).save(any(Job.class));
+    private Pageable createTestPageable() {
+        return PageRequest.of(0, 10);
     }
 
-    @Test
-    @DisplayName("Should throw UsernameNotFoundException when user does not exist")
-    void createJob_whenUserNotFound_thenShouldThrowException() {
-        JobRequestDTO request = createTestRequest();
+    @Nested
+    @DisplayName("Create job tests")
+    class CreateJobTests {
+        @Test
+        @DisplayName("Should create and return a job when user exists")
+        void whenUserExists_shouldCreateAndReturnJob() {
+            JobRequestDTO request = createTestRequest();
+            User user = createTestUser();
+            Job job = createTestJob(user);
+            JobResponseDTO expectedResponse = createTestResponseDTO();
 
-        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+            when(userRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(user));
+            when(jobRepository.save(any(Job.class))).thenReturn(job);
 
-        assertThatThrownBy(() -> jobService.createJob(request, "unknown"))
-                .isInstanceOf(UsernameNotFoundException.class)
-                .hasMessageContaining("User not found");
+            JobResponseDTO result = jobService.createJob(request, TEST_USERNAME);
 
-        verify(userRepository).findByUsername("unknown");
-        verify(jobRepository, never()).save(any(Job.class));
+            assertThat(result)
+                    .returns(expectedResponse.id(), JobResponseDTO::id)
+                    .returns(expectedResponse.title(), JobResponseDTO::title)
+                    .returns(expectedResponse.description(), JobResponseDTO::description)
+                    .returns(expectedResponse.company(), JobResponseDTO::company)
+                    .returns(expectedResponse.location(), JobResponseDTO::location)
+                    .returns(expectedResponse.salary(), JobResponseDTO::salary)
+                    .returns(expectedResponse.active(), JobResponseDTO::active)
+                    .returns(expectedResponse.postedBy(), JobResponseDTO::postedBy);
+
+            ArgumentCaptor<Job> jobCaptor = ArgumentCaptor.forClass(Job.class);
+            verify(jobRepository).save(jobCaptor.capture());
+
+            Job savedJob = jobCaptor.getValue();
+            assertThat(savedJob.getTitle()).isEqualTo(request.title());
+            assertThat(savedJob.getDescription()).isEqualTo(request.description());
+            assertThat(savedJob.getCompany()).isEqualTo(request.company());
+            assertThat(savedJob.getLocation()).isEqualTo(request.location());
+            assertThat(savedJob.getSalary()).isEqualTo(request.salary());
+            assertThat(savedJob.getPostedBy()).isEqualTo(user);
+
+            verifyNoMoreInteractions(jobRepository, userRepository);
+        }
+
+        @Test
+        @DisplayName("Should throw UsernameNotFoundException when user does not exist")
+        void whenUserNotFound_shouldThrowException() {
+            JobRequestDTO request = createTestRequest();
+
+            when(userRepository.findByUsername(NON_EXISTENT_USERNAME)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> jobService.createJob(request, NON_EXISTENT_USERNAME))
+                    .isInstanceOf(UsernameNotFoundException.class)
+                    .hasMessage(USER_NOT_FOUND_MESSAGE);
+
+            verify(userRepository).findByUsername(NON_EXISTENT_USERNAME);
+            verify(jobRepository, never()).save(any(Job.class));
+            verifyNoMoreInteractions(jobRepository, userRepository);
+        }
     }
 
-    @Test
-    @DisplayName("Should return id of job when job exists")
-    void findJobById_whenJobExists_thenShouldReturnJob() {
-        User user = createTestUser();
-        Job job = createTestJob(user);
-        JobResponseDTO expectedResponse = createTestResponseDTO();
+    @Nested
+    @DisplayName("Find Job By ID Tests")
+    class FindJobByIdTests {
+        @Test
+        @DisplayName("Should return id of job when job exists")
+        void whenJobExists_shouldReturnJob() {
+            User user = createTestUser();
+            Job job = createTestJob(user);
+            JobResponseDTO expectedResponse = createTestResponseDTO();
 
-        when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
+            when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(job));
 
-        JobResponseDTO result = jobService.getJobById(1L);
+            JobResponseDTO result = jobService.getJobById(TEST_ID);
 
-        assertThat(result).isEqualTo(expectedResponse);
-        verify(jobRepository).findById(1L);
+            assertThat(result)
+                    .returns(expectedResponse.id(), JobResponseDTO::id)
+                    .returns(expectedResponse.title(), JobResponseDTO::title)
+                    .returns(expectedResponse.description(), JobResponseDTO::description)
+                    .returns(expectedResponse.company(), JobResponseDTO::company)
+                    .returns(expectedResponse.location(), JobResponseDTO::location)
+                    .returns(expectedResponse.salary(), JobResponseDTO::salary)
+                    .returns(expectedResponse.active(), JobResponseDTO::active)
+                    .returns(expectedResponse.postedBy(), JobResponseDTO::postedBy);
+        }
+
+        @Test
+        @DisplayName("Should throw JobNotFoundException when job does not exist")
+        void whenJobNotFound_shouldThrowException() {
+            when(jobRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> jobService.getJobById(NON_EXISTENT_ID))
+                    .isInstanceOf(JobNotFoundException.class)
+                    .hasMessage(String.format(JOB_NOT_FOUND_MESSAGE, NON_EXISTENT_ID));
+
+            verify(jobRepository).findById(NON_EXISTENT_ID);
+            verifyNoMoreInteractions(jobRepository);
+        }
     }
 
-    @Test
-    @DisplayName("Should throw JobNotFoundException when job does not exist")
-    void findJobById_whenJobNotFound_thenShouldThrowException() {
-        when(jobRepository.findById(99L)).thenReturn(Optional.empty());
+    @Nested
+    @DisplayName("Update Job Tests")
+    class UpdateJobTests {
+        @Test
+        @DisplayName("Should update and return new job details when job exists")
+        void whenJobExists_shouldReturnUpdatedJobDetails() {
+            User user = createTestUser();
+            Job existingJob = createTestJob(user);
+            Job updatedJob = createTestJob(user);
+            JobRequestDTO updateRequest = new JobRequestDTO(
+                    "Updated title", "Update description", "Updated company",
+                    "Updated location", 5000.0
+            );
 
-        assertThatThrownBy(() -> jobService.getJobById(99L))
-                .isInstanceOf(JobNotFoundException.class);
+            updatedJob.setTitle("Updated title");
+            updatedJob.setDescription("Updated description");
+            updatedJob.setCompany("Updated company");
+            updatedJob.setLocation("Updated location");
+            updatedJob.setSalary(5000.0);
 
-        verify(jobRepository).findById(99L);
+            when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(existingJob));
+            when(jobRepository.save(existingJob)).thenReturn(updatedJob);
+
+            JobResponseDTO result = jobService.updateJob(TEST_ID, updateRequest);
+
+            ArgumentCaptor<Job> jobCaptor = ArgumentCaptor.forClass(Job.class);
+            verify(jobRepository).save(jobCaptor.capture());
+
+            Job capturedJob = jobCaptor.getValue();
+            assertThat(capturedJob.getTitle()).isEqualTo(updateRequest.title());
+            assertThat(capturedJob.getSalary()).isEqualTo(updateRequest.salary());
+
+            assertThat(result)
+                    .returns("Updated title", JobResponseDTO::title)
+                    .returns("Updated description", JobResponseDTO::description)
+                    .returns("Updated company", JobResponseDTO::company)
+                    .returns("Updated location", JobResponseDTO::location)
+                    .returns(5000.0, JobResponseDTO::salary);
+        }
+
+        @Test
+        @DisplayName("Should throw JobNotFoundException when job does not exist")
+        void whenJobNotFound_shouldThrowException() {
+            JobRequestDTO request = createTestRequest();
+            when(jobRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> jobService.updateJob(NON_EXISTENT_ID, request))
+                    .isInstanceOf(JobNotFoundException.class)
+                    .hasMessage(String.format(JOB_NOT_FOUND_MESSAGE, NON_EXISTENT_ID));
+
+            verify(jobRepository).findById(NON_EXISTENT_ID);
+            verify(jobRepository, never()).save(any(Job.class));
+            verifyNoMoreInteractions(jobRepository);
+        }
+
+        @Test
+        @DisplayName("Should update only provided fields when job exists")
+        void updateJob_partialUpdate_shouldUpdateOnlyProvidedFields() {
+            User user = createTestUser();
+            Job existingJob = createTestJob(user);
+            JobRequestDTO partialUpdate = new JobRequestDTO(null, null, null, "New Location", null);
+
+            when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(existingJob));
+            when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            JobResponseDTO result = jobService.updateJob(TEST_ID, partialUpdate);
+
+            verify(jobRepository).save(any(Job.class));
+
+            assertThat(result.location()).isEqualTo("New Location");
+            assertThat(result.title()).isEqualTo(existingJob.getTitle());
+            assertThat(result.description()).isEqualTo(existingJob.getDescription());
+            assertThat(result.company()).isEqualTo(existingJob.getCompany());
+            assertThat(result.salary()).isEqualTo(existingJob.getSalary());
+        }
     }
 
-    @Test
-    @DisplayName("Should update and return new job details when job exists")
-    void updateJob_whenJobExists_thenShouldReturnUpdatedJobDetails() {
-        User user = createTestUser();
-        Job existingJob = createTestJob(user);
-        Job updatedJob = createTestJob(user);
-        JobRequestDTO updateRequest = new JobRequestDTO(
-                "Updated title", "Update description", "Updated company",
-                "Updated location", 5000.0
-        );
+    @Nested
+    @DisplayName("Delete Job Tests")
+    class DeleteJobTest {
+        @Test
+        @DisplayName("Should deactivate job when job exists")
+        void whenJobExists_shouldDeactivateAndSave() {
+            User user = createTestUser();
+            Job job = createTestJob(user);
 
-        updatedJob.setTitle("Updated title");
-        updatedJob.setDescription("Updated description");
-        updatedJob.setCompany("Updated company");
-        updatedJob.setLocation("Updated location");
-        updatedJob.setSalary(5000.0);
+            when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(job));
 
-        when(jobRepository.findById(1L)).thenReturn(Optional.of(existingJob));
-        when(jobRepository.save(existingJob)).thenReturn(updatedJob);
+            jobService.deleteJob(TEST_ID);
+            ArgumentCaptor<Job> jobCaptor = ArgumentCaptor.forClass(Job.class);
+            verify(jobRepository).save(jobCaptor.capture());
+            Job savedJob = jobCaptor.getValue();
 
-        JobResponseDTO result = jobService.updateJob(1L, updateRequest);
+            assertThat(savedJob.isActive()).isFalse();
+            verify(jobRepository).findById(TEST_ID);
+        }
 
-        assertThat(result.title()).isEqualTo("Updated title");
-        assertThat(result.description()).isEqualTo("Updated description");
-        assertThat(result.salary()).isEqualTo(5000.0);
+        @Test
+        @DisplayName("Should throw JobNotFoundException when job does not exist")
+        void whenJobNotFound_shouldThrowException() {
+            when(jobRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
 
-        verify(jobRepository).findById(1L);
-        verify(jobRepository).save(existingJob);
+            assertThatThrownBy(() -> jobService.deleteJob(NON_EXISTENT_ID))
+                    .isInstanceOf(JobNotFoundException.class);
+
+            verify(jobRepository).findById(NON_EXISTENT_ID);
+            verify(jobRepository, never()).save(any(Job.class));
+            verifyNoMoreInteractions(jobRepository);
+        }
     }
 
-    @Test
-    @DisplayName("Should throw JobNotFoundException when job does not exist")
-    void updateJob_whenJobNotFound_thenShouldThrowException() {
-        JobRequestDTO request = createTestRequest();
-        when(jobRepository.findById(99L)).thenReturn(Optional.empty());
+    @Nested
+    @DisplayName("Get All Active Jobs Tests")
+    class GetAllActiveJobsTests {
+        @Test
+        @DisplayName("Should return paged model with jobs when active job exist")
+        void whenJobExists_shouldReturnPagedJobs() {
+            User user = createTestUser();
+            Job job = createTestJob(user);
+            Pageable pageable = createTestPageable();
+            Page<Job> jobPage = new PageImpl<>(List.of(job), pageable, 1);
 
-        assertThatThrownBy(() -> jobService.updateJob(99L, request))
-                .isInstanceOf(JobNotFoundException.class);
+            when(jobRepository.findByActiveTrue(pageable)).thenReturn(jobPage);
 
-        verify(jobRepository).findById(99L);
-        verify(jobRepository, never()).save(any(Job.class));
+            JobResponseDTO dto = createTestResponseDTO();
+            PagedModel<EntityModel<JobResponseDTO>> expectedModel = PagedModel.of(
+                    List.of(EntityModel.of(dto)),
+                    new PagedModel.PageMetadata(1, 0, 1)
+            );
+            when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(expectedModel);
+            PagedModel<EntityModel<JobResponseDTO>> result = jobService.getAllActiveJobs(pageable);
+            JobResponseDTO resultDto = result.getContent().iterator().next().getContent();
+
+            assertThat(resultDto).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(resultDto).extracting(
+                    JobResponseDTO::title,
+                    JobResponseDTO::company,
+                    JobResponseDTO::location,
+                    JobResponseDTO::salary,
+                    JobResponseDTO::active
+            ).containsExactly(
+                    "Java Developer",
+                    "BigTech",
+                    "Remote",
+                    3500.0,
+                    true
+            );
+
+            verify(jobRepository).findByActiveTrue(pageable);
+            verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
+        }
+
+        @Test
+        @DisplayName("Should return empty paged model when no active jobs exist")
+        void whenJobsNotExists_shouldReturnEmptyPage() {
+            Pageable pageable = createTestPageable();
+            Page<Job> emptyPage = Page.empty(pageable);
+            when(jobRepository.findByActiveTrue(pageable)).thenReturn(emptyPage);
+
+            PagedModel<EntityModel<JobResponseDTO>> emptyModel = PagedModel.of(
+                    List.of(),
+                    new PagedModel.PageMetadata(0, 0, 0)
+            );
+            when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(emptyModel);
+
+            PagedModel<EntityModel<JobResponseDTO>> result = jobService.getAllActiveJobs(pageable);
+
+            assertThat(result.getMetadata()).isNotNull();
+            assertThat(result.getContent()).isEmpty();
+
+            verify(jobRepository).findByActiveTrue(pageable);
+            verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
+        }
     }
 
-    @Test
-    @DisplayName("Should deactivate job when job exists")
-    void deleteJob_whenJobExists_thenShouldDeactivateAndSave() {
-        User user = createTestUser();
-        Job job = createTestJob(user);
+    @Nested
+    @DisplayName("Get Job By Recruiter Tests")
+    class GetJobByRecruiterTests {
+        @Test
+        @DisplayName("Should return paged jobs for recruiter when recruiter exist ")
+        void whenRecruiterExists_shouldReturnPagedJobs() {
+            User recruiter = createTestUser();
+            Job job = createTestJob(recruiter);
+            Pageable pageable = createTestPageable();
+            Page<Job> jobPage = new PageImpl<>(List.of(job), pageable, 1);
 
-        when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
-        when(jobRepository.save(job)).thenReturn(job);
+            when(userRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(recruiter));
+            when(jobRepository.findByPostedBy(recruiter, pageable)).thenReturn(jobPage);
+            JobResponseDTO dto = createTestResponseDTO();
+            PagedModel<EntityModel<JobResponseDTO>> expectedModel = PagedModel.of(
+                    List.of(EntityModel.of(dto)),
+                    new PagedModel.PageMetadata(1, 0, 1)
+            );
 
-        jobService.deleteJob(1L);
+            when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(expectedModel);
+            PagedModel<EntityModel<JobResponseDTO>> result = jobService.getJobsByRecruiter(TEST_USERNAME, pageable);
 
-        assertThat(job.isActive()).isEqualTo(false);
-        verify(jobRepository).findById(1L);
-        verify(jobRepository).save(job);
-    }
+            JobResponseDTO resultDto = result.getContent().iterator().next().getContent();
 
-    @Test
-    @DisplayName("Should throw JobNotFoundException when job does not exist")
-    void deleteJob_whenJobNotFound_thenShouldThrowException() {
-        when(jobRepository.findById(99L)).thenReturn(Optional.empty());
+            assertThat(resultDto).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(resultDto.title()).isEqualTo("Java Developer");
+            assertThat(resultDto.postedBy()).isEqualTo(TEST_USERNAME);
 
-        assertThatThrownBy(() -> jobService.deleteJob(99L))
-                .isInstanceOf(JobNotFoundException.class);
+            verify(userRepository).findByUsername(TEST_USERNAME);
+            verify(jobRepository).findByPostedBy(recruiter, pageable);
+            verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
+        }
 
-        verify(jobRepository).findById(99L);
-        verify(jobRepository, never()).save(any(Job.class));
-    }
+        @Test
+        @DisplayName("Should throw UserNotFoundException when recruiter does not exists")
+        void whenRecruiterNotFound_shouldThrowException() {
+            Pageable pageable = createTestPageable();
+            when(userRepository.findByUsername(NON_EXISTENT_USERNAME)).thenReturn(Optional.empty());
 
-    @Test
-    @DisplayName("Should return paged model with jobs when active job exist")
-    void getAllActiveJobs_whenJobExists_shouldReturnPagedJobs() {
-        User user = createTestUser();
-        Job job = createTestJob(user);
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Job> jobPage = new PageImpl<>(List.of(job), pageable, 1);
+            assertThatThrownBy(() -> jobService.getJobsByRecruiter(NON_EXISTENT_USERNAME, pageable))
+                    .isInstanceOf(UsernameNotFoundException.class)
+                    .hasMessage(USER_NOT_FOUND_MESSAGE);
 
-        when(jobRepository.findByActiveTrue(pageable)).thenReturn(jobPage);
+            verify(userRepository).findByUsername(NON_EXISTENT_USERNAME);
+            verifyNoMoreInteractions(userRepository);
+        }
 
-        JobResponseDTO dto = createTestResponseDTO();
-        PagedModel<EntityModel<JobResponseDTO>> expectedModel = PagedModel.of(
-                List.of(EntityModel.of(dto)),
-                new PagedModel.PageMetadata(1, 0, 1)
-        );
-        when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(expectedModel);
-        PagedModel<EntityModel<JobResponseDTO>> result = jobService.getAllActiveJobs(pageable);
-        JobResponseDTO resultDto = result.getContent().iterator().next().getContent();
+        @Test
+        @DisplayName("Should handle empty job list for recruiter")
+        void whenNoJobs_shouldReturnEmptyPage() {
+            User recruiter = createTestUser();
+            Pageable pageable = createTestPageable();
+            Page<Job> emptyPage = Page.empty(pageable);
 
-        assertThat(resultDto).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(resultDto.title()).isEqualTo("Java Developer");
-        assertThat(resultDto.location()).isEqualTo("Remote");
+            when(userRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(recruiter));
+            when(jobRepository.findByPostedBy(recruiter, pageable)).thenReturn(emptyPage);
 
-        verify(jobRepository).findByActiveTrue(pageable);
-        verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
-        verifyNoMoreInteractions(jobRepository, pagedAssembler);
-    }
+            PagedModel<EntityModel<JobResponseDTO>> emptyModel = PagedModel.of(
+                    List.of(),
+                    new PagedModel.PageMetadata(0, 0, 0)
+            );
+            when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class)))
+                    .thenReturn(emptyModel);
 
-    @Test
-    @DisplayName("Should return empty paged model when no active jobs exist")
-    void getAllActiveJobs_whenJobsNotExists_shouldReturnEmptyPage() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Job> emptyPage = Page.empty(pageable);
-        when(jobRepository.findByActiveTrue(pageable)).thenReturn(emptyPage);
+            PagedModel<EntityModel<JobResponseDTO>> result = jobService.getJobsByRecruiter(TEST_USERNAME, pageable);
 
-        PagedModel<EntityModel<JobResponseDTO>> emptyModel = PagedModel.of(
-                List.of(), new PagedModel.PageMetadata(0, 0, 0));
-        when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(emptyModel);
-
-        PagedModel<EntityModel<JobResponseDTO>> result = jobService.getAllActiveJobs(pageable);
-
-        assertThat(result.getMetadata()).isNotNull();
-        assertThat(result.getContent()).isEmpty();
-
-        verify(jobRepository).findByActiveTrue(pageable);
-        verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
-    }
-
-    @Test
-    @DisplayName("Should return paged jobs for recruiter when recruiter exist ")
-    void getJobsByRecruiter_whenRecruiterExists_shouldReturnPagedJobs() {
-        User recruiter = createTestUser();
-        Job job = createTestJob(recruiter);
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Job> jobPage = new PageImpl<>(List.of(job), pageable, 1);
-
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(recruiter));
-        when(jobRepository.findByPostedBy(recruiter, pageable)).thenReturn(jobPage);
-        JobResponseDTO dto = createTestResponseDTO();
-        PagedModel<EntityModel<JobResponseDTO>> expectedModel = PagedModel.of(
-                List.of(EntityModel.of(dto)),
-                new PagedModel.PageMetadata(1, 0, 1)
-        );
-
-        when(pagedAssembler.toModel(any(Page.class), any(RepresentationModelAssembler.class))).thenReturn(expectedModel);
-        PagedModel<EntityModel<JobResponseDTO>> result = jobService.getJobsByRecruiter("user", pageable);
-
-        JobResponseDTO resultDto = result.getContent().iterator().next().getContent();
-
-        assertThat(resultDto).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(resultDto.title()).isEqualTo("Java Developer");
-        assertThat(resultDto.postedBy()).isEqualTo("user");
-
-        verify(userRepository).findByUsername("user");
-        verify(jobRepository).findByPostedBy(recruiter, pageable);
-        verify(pagedAssembler).toModel(any(Page.class), any(RepresentationModelAssembler.class));
-    }
-
-    @Test
-    @DisplayName("Should throw UserNotFoundException when recruiter does not exists")
-    void getJobsByRecruiter_whenRecruiterNotFound_shouldThrowException() {
-        Pageable pageable = PageRequest.of(0, 1);
-        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> jobService.getJobsByRecruiter("unknown", pageable))
-                .isInstanceOf(UsernameNotFoundException.class)
-                .hasMessageContaining("User not found");
-
-        verify(userRepository).findByUsername("unknown");
-        verifyNoInteractions(jobRepository);
-        verifyNoInteractions(pagedAssembler);
+            assertThat(result.getContent()).isEmpty();
+            assertThat(result.getMetadata()).isNotNull();
+        }
     }
 }
