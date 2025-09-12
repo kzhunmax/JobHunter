@@ -7,6 +7,7 @@ public record JobApplicationResponseDTO(
         String company,
         String candidateUsername,
         String status,
-        String appliedAt
+        String appliedAt,
+        String coverLetter
 ) {
 }

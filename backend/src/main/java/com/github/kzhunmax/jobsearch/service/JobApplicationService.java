@@ -32,12 +32,12 @@ public class JobApplicationService {
     private final PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler;
 
     @Transactional
-    public JobApplicationResponseDTO applyToJob(Long jobId, String username) {
+    public JobApplicationResponseDTO applyToJob(Long jobId, String username, String coverLetter) {
         Job job = findJobById(jobId);
         User candidate = findUserByUsername(username);
         validateNoDuplicateApplication(job, candidate);
 
-        JobApplication application = createAndSaveApplication(job, candidate);
+        JobApplication application = createAndSaveApplication(job, candidate, coverLetter);
         return jobApplicationMapper.toDto(application);
     }
 
@@ -84,11 +84,12 @@ public class JobApplicationService {
         }
     }
 
-    private JobApplication createAndSaveApplication(Job job, User candidate) {
+    private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter) {
         JobApplication application = JobApplication.builder()
                 .job(job)
                 .candidate(candidate)
                 .status(ApplicationStatus.APPLIED)
+                .coverLetter(coverLetter)
                 .build();
 
         return jobApplicationRepository.save(application);

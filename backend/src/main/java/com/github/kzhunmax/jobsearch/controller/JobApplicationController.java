@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.controller;
 
+import com.github.kzhunmax.jobsearch.dto.request.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.model.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.service.JobApplicationService;
@@ -22,10 +23,10 @@ public class JobApplicationController {
 
     @PostMapping("/apply/{jobId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<JobApplicationResponseDTO> apply(@PathVariable Long jobId, Authentication authentication) {
+    public ResponseEntity<JobApplicationResponseDTO> apply(@PathVariable JobApplicationRequestDTO requestDto, Authentication authentication) {
         String username = authentication.getName();
-        JobApplicationResponseDTO dto = jobApplicationService.applyToJob(jobId, username);
-        return ResponseEntity.ok(dto);
+        JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(requestDto.jobId(), username, requestDto.coverLetter());
+        return ResponseEntity.ok(responseDto);
     }
 
     @GetMapping("/job/{jobId}")

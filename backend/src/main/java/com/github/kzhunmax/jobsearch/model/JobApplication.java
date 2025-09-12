@@ -33,4 +33,7 @@ public class JobApplication extends BaseEntity {
     @Builder.Default
     @Column(nullable = false, updatable = false)
     private java.time.Instant appliedAt = java.time.Instant.now();
+
+    @Column(name = "cover_letter", columnDefinition = "TEXT")
+    private String coverLetter;
 }

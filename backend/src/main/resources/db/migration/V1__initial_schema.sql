@@ -26,6 +26,7 @@ CREATE TABLE job_applications (
     candidate_id BIGINT NOT NULL REFERENCES users(id),
     status VARCHAR(50) NOT NULL DEFAULT 'APPLIED',
     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    cover_letter TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(job_id, candidate_id)

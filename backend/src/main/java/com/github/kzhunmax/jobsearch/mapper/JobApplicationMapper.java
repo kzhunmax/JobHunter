@@ -15,7 +15,8 @@ public class JobApplicationMapper {
                 application.getJob().getCompany(),
                 application.getCandidate().getUsername(),
                 application.getStatus().name(),
-                application.getAppliedAt().toString()
+                application.getAppliedAt().toString(),
+                application.getCoverLetter()
         );
     }
 }
