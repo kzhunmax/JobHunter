@@ -2,12 +2,17 @@ package com.github.kzhunmax.jobsearch;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(classes = JobSearchPlatformApplicationTests.class)
-class JobSearchPlatformApplicationTests {
+import static com.github.kzhunmax.jobsearch.AbstractPostgresTest.POSTGRES;
+import static org.assertj.core.api.Assertions.assertThat;
 
-	@Test
-	void contextLoads() {
-	}
+@SpringBootTest
+@ActiveProfiles("test")
+class JobSearchPlatformApplicationTests extends AbstractPostgresTest {
 
+    @Test
+    void contextLoads() {
+        assertThat(POSTGRES.isRunning()).isTrue();
+    }
 }

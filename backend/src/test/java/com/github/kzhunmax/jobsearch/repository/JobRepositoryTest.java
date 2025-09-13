@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.repository;
 
+import com.github.kzhunmax.jobsearch.AbstractPostgresTest;
 import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,23 +8,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Testcontainers
+@ActiveProfiles("test")
 @DisplayName("Tests for the JobRepository")
-public class JobRepositoryTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.6");
+public class JobRepositoryTest extends AbstractPostgresTest {
 
     @Autowired
     private UserRepository userRepository;
