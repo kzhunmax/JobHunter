@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kzhunmax.jobsearch.dto.request.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
-import com.github.kzhunmax.jobsearch.model.Job;
-import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.security.JobSecurityService;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.service.JobService;
@@ -34,10 +32,10 @@ import java.util.List;
 import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -75,7 +73,7 @@ class JobControllerTest {
     @BeforeEach
     void setUp() {
         validJobRequest = createJobRequest();
-        jobResponse = createJobResponse(1L);
+        jobResponse = createJobResponse(TEST_ID);
         invalidJobRequest = createInvalidJobRequest();
     }
 
@@ -112,7 +110,7 @@ class JobControllerTest {
         }
 
         @Test
-        @DisplayName("Returns created job when request is valid and user has recruiter role")
+        @DisplayName("Returns 400 Bad Request when request validation fails")
         @WithMockUser(username = "recruiter", roles = "RECRUITER")
         void withInvalidRequest_returnsBadRequest() throws Exception {
             when(jobService.createJob(any(JobRequestDTO.class), eq("recruiter"))).thenReturn(jobResponse);
@@ -204,9 +202,7 @@ class JobControllerTest {
         @Test
         @DisplayName("Returns job by ID when exists")
         void withExistingJob_returnsJob() throws Exception {
-            JobResponseDTO dto = createJobResponse(TEST_ID);
-
-            when(jobService.getJobById(TEST_ID)).thenReturn(dto);
+            when(jobService.getJobById(TEST_ID)).thenReturn(jobResponse);
 
             mockMvc.perform(get("/api/jobs/{jobId}", TEST_ID)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -256,7 +252,6 @@ class JobControllerTest {
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updatedRequest)))
-                    .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.id").value(1))
                     .andExpect(jsonPath("$.data.title").value("Updated title"))
@@ -265,6 +260,86 @@ class JobControllerTest {
                     .andExpect(jsonPath("$.data.salary").value(5000.0));
         }
 
+        @Test
+        @DisplayName("Returns 403 Forbidden when non-owner tries to update job")
+        void withUnauthorizedNonOwner_returnsForbidden() throws Exception {
+            JobRequestDTO updatedRequest = TestDataFactory.updateJobRequest();
 
+            when(jobSecurityService.isJobOwner(eq(TEST_ID), any(Authentication.class))).thenReturn(false);
+
+            mockMvc.perform(put("/api/jobs/{jobId}", TEST_ID)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(updatedRequest)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Returns 400 Bad Request when request validation fails")
+        void withInvalidRequest_returnsBadRequest() throws Exception {
+
+            when(jobSecurityService.isJobOwner(eq(TEST_ID), any(Authentication.class))).thenReturn(true);
+            when(jobService.updateJob(eq(TEST_ID), any(JobRequestDTO.class))).thenReturn(jobResponse);
+
+            mockMvc.perform(put("/api/jobs/{jobId}", TEST_ID)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidJobRequest)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Returns 404 Not Found when job does not exist")
+        void withNonExistingJob_returnsNotFound() throws Exception {
+            JobRequestDTO updatedJobRequest = TestDataFactory.updateJobRequest();
+
+            when(jobSecurityService.isJobOwner(eq(NON_EXISTENT_ID), any(Authentication.class))).thenReturn(true);
+            when(jobService.updateJob(eq(NON_EXISTENT_ID), any(JobRequestDTO.class))).thenThrow(new JobNotFoundException(NON_EXISTENT_ID));
+
+            mockMvc.perform(put("/api/jobs/{jobId}", NON_EXISTENT_ID)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(updatedJobRequest)))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @WithMockUser(username = "recruiter", roles = "RECRUITER")
+    @DisplayName("Delete Job Endpoint Tests")
+    class DeleteJob {
+        @Test
+        @DisplayName("Returns 204 No Content when job owner deletes")
+        void withJobOwner_returnsNoContent() throws Exception {
+            when(jobSecurityService.isJobOwner(eq(TEST_ID), any(Authentication.class))).thenReturn(true);
+
+            mockMvc.perform(delete("/api/jobs/{jobId}", TEST_ID)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("Returns 403 Forbidden when non-owner tries to delete job")
+        void withUnauthorizedNonOwner_returnsForbidden() throws Exception {
+            when(jobSecurityService.isJobOwner(eq(TEST_ID), any(Authentication.class))).thenReturn(false);
+
+            mockMvc.perform(delete("/api/jobs/{jobId}", TEST_ID)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Returns 404 Not Found when job does not exist")
+        void withNonExistingJob_returnsNotFound() throws Exception {
+            when(jobSecurityService.isJobOwner(eq(NON_EXISTENT_ID), any(Authentication.class))).thenReturn(true);
+            doThrow(new JobNotFoundException(NON_EXISTENT_ID)).when(jobService).deleteJob(NON_EXISTENT_ID);
+
+            mockMvc.perform(delete("/api/jobs/{jobId}", NON_EXISTENT_ID)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound());
+        }
     }
 }
