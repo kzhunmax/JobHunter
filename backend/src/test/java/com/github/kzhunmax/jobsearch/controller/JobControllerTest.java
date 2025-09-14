@@ -82,9 +82,9 @@ class JobControllerTest {
     class CreateJob {
         @Test
         @DisplayName("Returns created job when request is valid and user has recruiter role")
-        @WithMockUser(username = "recruiter", roles = "RECRUITER")
+        @WithMockUser(username = TEST_USERNAME, roles = "RECRUITER")
         void withValidRequestAndRecruiterRole_returnCreatedJob() throws Exception {
-            when(jobService.createJob(any(JobRequestDTO.class), eq("recruiter"))).thenReturn(jobResponse);
+            when(jobService.createJob(any(JobRequestDTO.class), eq(TEST_USERNAME))).thenReturn(jobResponse);
 
             mockMvc.perform(post("/api/jobs")
                             .with(csrf())
@@ -100,7 +100,7 @@ class JobControllerTest {
 
         @Test
         @DisplayName("Returns 403 Forbidden when user does not have recruiter role")
-        @WithMockUser(username = "user", roles = "USER")
+        @WithMockUser(username = TEST_USERNAME, roles = "USER")
         void withUnauthorizedUserRole_returnsForbidden() throws Exception {
             mockMvc.perform(post("/api/jobs")
                             .with(csrf())
@@ -111,9 +111,9 @@ class JobControllerTest {
 
         @Test
         @DisplayName("Returns 400 Bad Request when request validation fails")
-        @WithMockUser(username = "recruiter", roles = "RECRUITER")
+        @WithMockUser(username = TEST_USERNAME, roles = "RECRUITER")
         void withInvalidRequest_returnsBadRequest() throws Exception {
-            when(jobService.createJob(any(JobRequestDTO.class), eq("recruiter"))).thenReturn(jobResponse);
+            when(jobService.createJob(any(JobRequestDTO.class), eq(TEST_USERNAME))).thenReturn(jobResponse);
 
             mockMvc.perform(post("/api/jobs")
                             .with(csrf())
@@ -124,7 +124,7 @@ class JobControllerTest {
     }
 
     @Nested
-    @WithMockUser(username = "user", roles = "USER")
+    @WithMockUser(username = TEST_USERNAME, roles = "USER")
     @DisplayName("List Jobs Endpoint Tests")
     class ListJobs {
         @Test
@@ -196,7 +196,7 @@ class JobControllerTest {
     }
 
     @Nested
-    @WithMockUser(username = "user", roles = "USER")
+    @WithMockUser(username = TEST_USERNAME, roles = "USER")
     @DisplayName("Get Job By ID Endpoint Tests")
     class GetJobById {
         @Test
@@ -236,7 +236,7 @@ class JobControllerTest {
     }
 
     @Nested
-    @WithMockUser(username = "recruiter", roles = "RECRUITER")
+    @WithMockUser(username = TEST_USERNAME, roles = "RECRUITER")
     @DisplayName("Update Job Endpoint Tests")
     class UpdateJob {
         @Test
@@ -305,7 +305,7 @@ class JobControllerTest {
     }
 
     @Nested
-    @WithMockUser(username = "recruiter", roles = "RECRUITER")
+    @WithMockUser(username = TEST_USERNAME, roles = "RECRUITER")
     @DisplayName("Delete Job Endpoint Tests")
     class DeleteJob {
         @Test
@@ -340,6 +340,62 @@ class JobControllerTest {
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get My Jobs Endpoint Tests")
+    class GetMyJobs {
+        @Test
+        @WithMockUser(username = TEST_USERNAME, roles = "RECRUITER")
+        @DisplayName("Returns paginated list of active jobs")
+        void withActiveJobs_returnsPagedJobs() throws Exception {
+            List<JobResponseDTO> jobList = List.of(
+                    createJobResponse(1L),
+                    createJobResponse(2L)
+            );
+
+            PagedModel<EntityModel<JobResponseDTO>> pagedJobs = PagedModel.of(
+                    jobList.stream().map(EntityModel::of).toList(),
+                    new PagedModel.PageMetadata(2, 0, 2)
+            );
+
+            when(jobService.getJobsByRecruiter(eq(TEST_USERNAME), any(Pageable.class))).thenReturn(pagedJobs);
+
+            mockMvc.perform(get("/api/jobs/my-jobs")
+                            .param("page", "0")
+                            .param("size", "10")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.page.size").value(2))
+                    .andExpect(jsonPath("$.data.page.totalElements").value(2))
+                    .andExpect(jsonPath("$.data.page.totalPages").value(1));
+        }
+
+        @Test
+        @WithMockUser(username = TEST_USERNAME, roles = "RECRUITER")
+        @DisplayName("Returns empty list when no active jobs")
+        void withNoActiveJobs_returnsEmptyList() throws Exception {
+            PagedModel<EntityModel<JobResponseDTO>> emptyPagedJobs = PagedModel.empty();
+            when(jobService.getJobsByRecruiter(eq(TEST_USERNAME), any(Pageable.class))).thenReturn(emptyPagedJobs);
+
+            mockMvc.perform(get("/api/jobs/my-jobs")
+                            .param("page", "0")
+                            .param("size", "10")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.content").isEmpty());
+        }
+
+        @Test
+        @WithMockUser(username = TEST_USERNAME, roles = "USER")
+        @DisplayName("Returns 403 Forbidden when non-recruiter tries to find his jobs")
+        void withUnauthorizedNonRecruiter_returnsForbidden() throws Exception {
+            mockMvc.perform(get("/api/jobs/my-jobs")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden());
         }
     }
 }
