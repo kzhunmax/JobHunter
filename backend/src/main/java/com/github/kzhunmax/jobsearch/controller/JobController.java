@@ -63,18 +63,6 @@ public class JobController {
         return ApiResponse.noContent(MDC.get("requestId"));
     }
 
-//    @GetMapping("/search")
-//    public ResponseEntity<ApiResponse<Page<JobResponseDTO>>> searchJobs(
-//            @RequestParam(required = false) String title,
-//            @RequestParam(required = false) String company,
-//            @RequestParam(required = false) String location,
-//            @RequestParam(required = false) Double minSalary,
-//            @RequestParam(required = false) Double maxSalary,
-//            @PageableDefault(size = 20) Pageable pageable) {
-//        Page<JobResponseDTO> results = jobService.searchJobs(title, company, location, minSalary, maxSalary, pageable);
-//        return ApiResponse.success(results, MDC.get("requestId"));
-//    }
-
     @PreAuthorize("hasRole('RECRUITER')")
     @GetMapping("/my-jobs")
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> getMyJobs(
