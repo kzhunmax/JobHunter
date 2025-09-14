@@ -1,8 +1,9 @@
 package com.github.kzhunmax.jobsearch.repository;
 
-import com.github.kzhunmax.jobsearch.AbstractPostgresTest;
 import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.User;
+import com.github.kzhunmax.jobsearch.util.AbstractPostgresTest;
+import com.github.kzhunmax.jobsearch.util.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("Tests for the JobRepository")
-public class JobRepositoryTest extends AbstractPostgresTest {
+class JobRepositoryTest extends AbstractPostgresTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -29,29 +30,14 @@ public class JobRepositoryTest extends AbstractPostgresTest {
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setUsername("user");
-        testUser.setEmail("user@example.com");
-        testUser.setPassword("Password123");
+        testUser = TestDataFactory.createUser("user");
         userRepository.save(testUser);
 
-        Job activeJob = new Job();
-        activeJob.setTitle("Active Job");
-        activeJob.setCompany("BigTech");
-        activeJob.setLocation("Remote");
-        activeJob.setSalary(2000.0);
-        activeJob.setActive(true);
-        activeJob.setPostedBy(testUser);
+        Job activeJob = TestDataFactory.createJob(testUser, true);
         jobRepository.save(activeJob);
 
 
-        Job inactiveJob = new Job();
-        inactiveJob.setTitle("Inactive Job");
-        inactiveJob.setCompany("BigTech");
-        inactiveJob.setLocation("Remote");
-        inactiveJob.setSalary(2000.0);
-        inactiveJob.setActive(false);
-        inactiveJob.setPostedBy(testUser);
+        Job inactiveJob = TestDataFactory.createJob(testUser, false);
         jobRepository.save(inactiveJob);
     }
 
@@ -61,7 +47,7 @@ public class JobRepositoryTest extends AbstractPostgresTest {
         Page<Job> jobs = jobRepository.findByActiveTrue(PageRequest.of(0, 10));
 
         assertThat(jobs).hasSize(1);
-        assertThat(jobs.getContent().getFirst().getTitle()).isEqualTo("Active Job");
+        assertThat(jobs.getContent().getFirst().getTitle()).isEqualTo("Java Dev");
     }
 
     @Test

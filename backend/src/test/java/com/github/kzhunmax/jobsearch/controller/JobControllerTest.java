@@ -17,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static com.github.kzhunmax.jobsearch.util.TestDataFactory.createJobRequest;
+import static com.github.kzhunmax.jobsearch.util.TestDataFactory.createJobResponse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -26,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(JobController.class)
-public class JobControllerTest {
+class JobControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,8 +47,8 @@ public class JobControllerTest {
 
     @BeforeEach
     void setUp() {
-        validJobRequest = new JobRequestDTO("Java Dev", "Backend dev", "BigTech", "Remote", 5000.0);
-        jobResponse = new JobResponseDTO(1L, "Java Dev", "Backend dev", "BigTech", "Remote", 5000.0, true, "recruiter");
+        validJobRequest = createJobRequest();
+        jobResponse = createJobResponse(1L);
     }
 
     @Test

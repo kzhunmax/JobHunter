@@ -7,6 +7,7 @@ import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
+import com.github.kzhunmax.jobsearch.util.TestDataFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,49 +57,6 @@ class JobServiceTest {
     @InjectMocks
     private JobService jobService;
 
-    private JobRequestDTO createTestRequest() {
-        return new JobRequestDTO(
-                "Java Developer",
-                "3 years of experience",
-                "BigTech",
-                "Remote",
-                3500.0
-        );
-    }
-
-    private User createTestUser() {
-        User user = new User();
-        user.setUsername(TEST_USERNAME);
-        user.setId(TEST_ID);
-        return user;
-    }
-
-    private Job createTestJob(User user) {
-        return Job.builder()
-                .id(TEST_ID)
-                .title("Java Developer")
-                .description("3 years of experience")
-                .company("BigTech")
-                .location("Remote")
-                .salary(3500.0)
-                .active(true)
-                .postedBy(user)
-                .build();
-    }
-
-    private JobResponseDTO createTestResponseDTO() {
-        return new JobResponseDTO(
-                TEST_ID,
-                "Java Developer",
-                "3 years of experience",
-                "BigTech",
-                "Remote",
-                3500.0,
-                true,
-                TEST_USERNAME
-        );
-    }
-
     private Pageable createTestPageable() {
         return PageRequest.of(0, 10);
     }
@@ -109,10 +67,10 @@ class JobServiceTest {
         @Test
         @DisplayName("Should create and return a job when user exists")
         void whenUserExists_shouldCreateAndReturnJob() {
-            JobRequestDTO request = createTestRequest();
-            User user = createTestUser();
-            Job job = createTestJob(user);
-            JobResponseDTO expectedResponse = createTestResponseDTO();
+            JobRequestDTO request = TestDataFactory.createJobRequest();
+            User user = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
+            Job job = TestDataFactory.createJob(TEST_ID, user, true);
+            JobResponseDTO expectedResponse = TestDataFactory.createJobResponse(TEST_ID);
 
             when(userRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(user));
             when(jobRepository.save(any(Job.class))).thenReturn(job);
@@ -146,7 +104,7 @@ class JobServiceTest {
         @Test
         @DisplayName("Should throw UsernameNotFoundException when user does not exist")
         void whenUserNotFound_shouldThrowException() {
-            JobRequestDTO request = createTestRequest();
+            JobRequestDTO request = TestDataFactory.createJobRequest();
 
             when(userRepository.findByUsername(NON_EXISTENT_USERNAME)).thenReturn(Optional.empty());
 
@@ -166,9 +124,9 @@ class JobServiceTest {
         @Test
         @DisplayName("Should return id of job when job exists")
         void whenJobExists_shouldReturnJob() {
-            User user = createTestUser();
-            Job job = createTestJob(user);
-            JobResponseDTO expectedResponse = createTestResponseDTO();
+            User user = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
+            Job job = TestDataFactory.createJob(TEST_ID, user, true);
+            JobResponseDTO expectedResponse = TestDataFactory.createJobResponse(TEST_ID);
 
             when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(job));
 
@@ -205,9 +163,9 @@ class JobServiceTest {
         @Test
         @DisplayName("Should update and return new job details when job exists")
         void whenJobExists_shouldReturnUpdatedJobDetails() {
-            User user = createTestUser();
-            Job existingJob = createTestJob(user);
-            Job updatedJob = createTestJob(user);
+            User user = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
+            Job existingJob = TestDataFactory.createJob(TEST_ID, user, true);
+            Job updatedJob = TestDataFactory.createJob(TEST_ID, user, true);
             JobRequestDTO updateRequest = new JobRequestDTO(
                     "Updated title", "Update description", "Updated company",
                     "Updated location", 5000.0
@@ -242,7 +200,7 @@ class JobServiceTest {
         @Test
         @DisplayName("Should throw JobNotFoundException when job does not exist")
         void whenJobNotFound_shouldThrowException() {
-            JobRequestDTO request = createTestRequest();
+            JobRequestDTO request = TestDataFactory.createJobRequest();
             when(jobRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> jobService.updateJob(NON_EXISTENT_ID, request))
@@ -257,8 +215,8 @@ class JobServiceTest {
         @Test
         @DisplayName("Should update only provided fields when job exists")
         void updateJob_partialUpdate_shouldUpdateOnlyProvidedFields() {
-            User user = createTestUser();
-            Job existingJob = createTestJob(user);
+            User user = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
+            Job existingJob = TestDataFactory.createJob(TEST_ID, user, true);
             JobRequestDTO partialUpdate = new JobRequestDTO(null, null, null, "New Location", null);
 
             when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(existingJob));
@@ -282,8 +240,8 @@ class JobServiceTest {
         @Test
         @DisplayName("Should deactivate job when job exists")
         void whenJobExists_shouldDeactivateAndSave() {
-            User user = createTestUser();
-            Job job = createTestJob(user);
+            User user = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
+            Job job = TestDataFactory.createJob(TEST_ID, user, true);
 
             when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(job));
 
@@ -316,14 +274,14 @@ class JobServiceTest {
         @Test
         @DisplayName("Should return paged model with jobs when active job exist")
         void whenJobExists_shouldReturnPagedJobs() {
-            User user = createTestUser();
-            Job job = createTestJob(user);
+            User user = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
+            Job job = TestDataFactory.createJob(TEST_ID, user, true);
             Pageable pageable = createTestPageable();
             Page<Job> jobPage = new PageImpl<>(List.of(job), pageable, 1);
 
             when(jobRepository.findByActiveTrue(pageable)).thenReturn(jobPage);
 
-            JobResponseDTO dto = createTestResponseDTO();
+            JobResponseDTO dto = TestDataFactory.createJobResponse(TEST_ID);
             PagedModel<EntityModel<JobResponseDTO>> expectedModel = PagedModel.of(
                     List.of(EntityModel.of(dto)),
                     new PagedModel.PageMetadata(1, 0, 1)
@@ -341,10 +299,10 @@ class JobServiceTest {
                     JobResponseDTO::salary,
                     JobResponseDTO::active
             ).containsExactly(
-                    "Java Developer",
+                    "Java Dev",
                     "BigTech",
                     "Remote",
-                    3500.0,
+                    5000.0,
                     true
             );
 
@@ -381,14 +339,14 @@ class JobServiceTest {
         @Test
         @DisplayName("Should return paged jobs for recruiter when recruiter exist ")
         void whenRecruiterExists_shouldReturnPagedJobs() {
-            User recruiter = createTestUser();
-            Job job = createTestJob(recruiter);
+            User recruiter = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
+            Job job = TestDataFactory.createJob(TEST_ID, recruiter, true);
             Pageable pageable = createTestPageable();
             Page<Job> jobPage = new PageImpl<>(List.of(job), pageable, 1);
 
             when(userRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(recruiter));
             when(jobRepository.findByPostedBy(recruiter, pageable)).thenReturn(jobPage);
-            JobResponseDTO dto = createTestResponseDTO();
+            JobResponseDTO dto = TestDataFactory.createJobResponse(TEST_ID);
             PagedModel<EntityModel<JobResponseDTO>> expectedModel = PagedModel.of(
                     List.of(EntityModel.of(dto)),
                     new PagedModel.PageMetadata(1, 0, 1)
@@ -401,7 +359,7 @@ class JobServiceTest {
 
             assertThat(resultDto).isNotNull();
             assertThat(result.getContent()).hasSize(1);
-            assertThat(resultDto.title()).isEqualTo("Java Developer");
+            assertThat(resultDto.title()).isEqualTo("Java Dev");
             assertThat(resultDto.postedBy()).isEqualTo(TEST_USERNAME);
 
             verify(userRepository).findByUsername(TEST_USERNAME);
@@ -426,7 +384,7 @@ class JobServiceTest {
         @Test
         @DisplayName("Should handle empty job list for recruiter")
         void whenNoJobs_shouldReturnEmptyPage() {
-            User recruiter = createTestUser();
+            User recruiter = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
             Pageable pageable = createTestPageable();
             Page<Job> emptyPage = Page.empty(pageable);
 
