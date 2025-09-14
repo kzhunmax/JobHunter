@@ -29,6 +29,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.util.List;
 import java.util.Optional;
 
+import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,13 +38,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JobService Tests")
 class JobServiceTest {
-
-    private static final String TEST_USERNAME = "user";
-    private static final Long TEST_ID = 1L;
-    private static final Long NON_EXISTENT_ID = 99L;
-    private static final String NON_EXISTENT_USERNAME = "unknown";
-    private static final String USER_NOT_FOUND_MESSAGE = "User not found";
-    private static final String JOB_NOT_FOUND_MESSAGE = "Job with id %d not found";
 
     @Mock
     private JobRepository jobRepository;
@@ -166,10 +160,7 @@ class JobServiceTest {
             User user = TestDataFactory.createUser(TEST_ID, TEST_USERNAME);
             Job existingJob = TestDataFactory.createJob(TEST_ID, user, true);
             Job updatedJob = TestDataFactory.createJob(TEST_ID, user, true);
-            JobRequestDTO updateRequest = new JobRequestDTO(
-                    "Updated title", "Update description", "Updated company",
-                    "Updated location", 5000.0
-            );
+            JobRequestDTO updateRequest = TestDataFactory.updateJobRequest();
 
             updatedJob.setTitle("Updated title");
             updatedJob.setDescription("Updated description");

@@ -7,6 +7,13 @@ import com.github.kzhunmax.jobsearch.model.User;
 
 public class TestDataFactory {
 
+    public static final String TEST_USERNAME = "user";
+    public static final Long TEST_ID = 1L;
+    public static final Long NON_EXISTENT_ID = 99L;
+    public static final String NON_EXISTENT_USERNAME = "unknown";
+    public static final String USER_NOT_FOUND_MESSAGE = "User not found";
+    public static final String JOB_NOT_FOUND_MESSAGE = "Job with id %d not found";
+
     public static User createUser(Long id, String username) {
         User user = new User();
         user.setId(id);
@@ -59,5 +66,15 @@ public class TestDataFactory {
 
     public static JobRequestDTO createInvalidJobRequest() {
         return new JobRequestDTO("", "Backend dev", "BigTech", "", -100.0);
+    }
+
+    public static JobRequestDTO updateJobRequest() {
+        return new JobRequestDTO("Updated title", "Update description",
+                "Updated company", "Updated location", 5000.0);
+    }
+
+    public static JobResponseDTO updateJobResponse(Long id) {
+        return new JobResponseDTO(id, "Updated title", "Update description",
+                "Updated company", "Updated location", 5000.0, true, "recruiter");
     }
 }
