@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ActiveProfiles("test")
-@DisplayName("Tests for the JobRepository")
+@DisplayName("JobRepository Tests")
 class JobRepositoryTest extends AbstractPostgresTest {
 
     @Autowired

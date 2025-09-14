@@ -56,4 +56,8 @@ public class TestDataFactory {
     public static JobResponseDTO createJobResponse(Long id) {
         return new JobResponseDTO(id, "Java Dev", "Backend dev", "BigTech", "Remote", 5000.0, true, "user");
     }
+
+    public static JobRequestDTO createInvalidJobRequest() {
+        return new JobRequestDTO("", "Backend dev", "BigTech", "", -100.0);
+    }
 }

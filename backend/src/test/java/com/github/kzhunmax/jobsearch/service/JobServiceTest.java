@@ -35,7 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Tests for the Job Service")
+@DisplayName("JobService Tests")
 class JobServiceTest {
 
     private static final String TEST_USERNAME = "user";
@@ -62,7 +62,7 @@ class JobServiceTest {
     }
 
     @Nested
-    @DisplayName("Create job tests")
+    @DisplayName("Create Job tests")
     class CreateJobTests {
         @Test
         @DisplayName("Should create and return a job when user exists")
