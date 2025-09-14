@@ -69,12 +69,12 @@ public class TestDataFactory {
     }
 
     public static JobRequestDTO updateJobRequest() {
-        return new JobRequestDTO("Updated title", "Update description",
+        return new JobRequestDTO("Updated title", "Updated description",
                 "Updated company", "Updated location", 5000.0);
     }
 
     public static JobResponseDTO updateJobResponse(Long id) {
-        return new JobResponseDTO(id, "Updated title", "Update description",
+        return new JobResponseDTO(id, "Updated title", "Updated description",
                 "Updated company", "Updated location", 5000.0, true, "recruiter");
     }
 }
