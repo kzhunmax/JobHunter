@@ -1,9 +1,18 @@
 package com.github.kzhunmax.jobsearch.util;
 
 import com.github.kzhunmax.jobsearch.dto.request.JobRequestDTO;
+import com.github.kzhunmax.jobsearch.dto.request.UserLoginDTO;
+import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobResponseDTO;
+import com.github.kzhunmax.jobsearch.dto.response.UserResponseDTO;
 import com.github.kzhunmax.jobsearch.model.Job;
+import com.github.kzhunmax.jobsearch.model.Role;
 import com.github.kzhunmax.jobsearch.model.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.List;
+import java.util.Set;
 
 public class TestDataFactory {
 
@@ -76,5 +85,29 @@ public class TestDataFactory {
     public static JobResponseDTO updateJobResponse(Long id) {
         return new JobResponseDTO(id, "Updated title", "Updated description",
                 "Updated company", "Updated location", 5000.0, true, "recruiter");
+    }
+
+    public static UserRegistrationDTO createUserRegistrationDTO() {
+        return new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "Password123", "Password123", Set.of(Role.ROLE_USER));
+    }
+
+    public static UserLoginDTO createUserLoginDTO() {
+        return new UserLoginDTO(TEST_USERNAME, "Password123");
+    }
+
+    public static UserResponseDTO createUserResponseDTO(Long id) {
+        return new UserResponseDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", Set.of(Role.ROLE_USER));
+    }
+
+    public static UserDetails createUserDetails(String username) {
+        return new org.springframework.security.core.userdetails.User(
+                username,
+                "Password123",
+                true,
+                true,
+                true,
+                true,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
     }
 }
