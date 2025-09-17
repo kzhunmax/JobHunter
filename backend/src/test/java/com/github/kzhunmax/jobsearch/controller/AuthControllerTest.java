@@ -126,6 +126,20 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errors[0].code").value("INVALID_REFRESH"))
+                .andExpect(jsonPath("$.errors[0].message").value("Refresh token is invalid or expired"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 when refresh token is missing")
+    void refresh_whenMissingToken_shouldReturnBadRequest() throws Exception {
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("MISSING_TOKEN"))
+                .andExpect(jsonPath("$.errors[0].message").value("Refresh token is required"));
     }
 }

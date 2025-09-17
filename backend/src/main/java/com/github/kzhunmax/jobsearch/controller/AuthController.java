@@ -62,14 +62,22 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<JwtResponse>> refresh(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
-        String username = jwtService.extractUsername(refreshToken);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-        if (jwtService.isTokenValid(refreshToken, userDetails)) {
-            String newAccessToken = jwtService.generateToken(userDetails);
-            String newRefreshToken = jwtService.generateRefreshToken(userDetails);
-            return ApiResponse.success(new JwtResponse(newAccessToken, newRefreshToken), MDC.get(REQUEST_ID_MDC_KEY));
-        } else {
+        if (refreshToken == null) {
+            return ApiResponse.error(HttpStatus.BAD_REQUEST, "MISSING_TOKEN", "Refresh token is required", MDC.get(REQUEST_ID_MDC_KEY));
+        }
+        try {
+            String username = jwtService.extractUsername(refreshToken);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+            if (jwtService.isTokenValid(refreshToken, userDetails)) {
+                String newAccessToken = jwtService.generateToken(userDetails);
+                String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+                return ApiResponse.success(new JwtResponse(newAccessToken, newRefreshToken), MDC.get(REQUEST_ID_MDC_KEY));
+            } else {
+                return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", MDC.get(REQUEST_ID_MDC_KEY));
+            }
+        } catch (Exception e) {
             return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", MDC.get(REQUEST_ID_MDC_KEY));
         }
     }
