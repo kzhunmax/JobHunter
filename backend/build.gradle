@@ -23,6 +23,10 @@ repositories {
 	mavenCentral()
 }
 
+ext {
+	set('testcontainers.version', "1.21.3")
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -40,9 +44,9 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 	annotationProcessor 'org.projectlombok:lombok:1.18.38'
-	testImplementation 'org.springframework.boot:spring-boot-testcontainers:3.5.5'
-	testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
-	testImplementation 'org.testcontainers:postgresql:1.21.3'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
 	testImplementation 'org.mockito:mockito-junit-jupiter:5.19.0'
 	testImplementation 'org.mockito:mockito-core:5.19.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

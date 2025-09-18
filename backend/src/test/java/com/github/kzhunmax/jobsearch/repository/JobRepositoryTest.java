@@ -3,7 +3,6 @@ package com.github.kzhunmax.jobsearch.repository;
 import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.util.AbstractPostgresTest;
-import com.github.kzhunmax.jobsearch.util.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,10 +12,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
+import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@ActiveProfiles("test")
 @DisplayName("JobRepository Tests")
 class JobRepositoryTest extends AbstractPostgresTest {
 
@@ -30,14 +29,14 @@ class JobRepositoryTest extends AbstractPostgresTest {
 
     @BeforeEach
     void setUp() {
-        testUser = TestDataFactory.createUser("user");
+        testUser = createUser(TEST_USERNAME);
         userRepository.save(testUser);
 
-        Job activeJob = TestDataFactory.createJob(testUser, true);
+        Job activeJob = createJob(testUser, true);
         jobRepository.save(activeJob);
 
 
-        Job inactiveJob = TestDataFactory.createJob(testUser, false);
+        Job inactiveJob = createJob(testUser, false);
         jobRepository.save(inactiveJob);
     }
 
