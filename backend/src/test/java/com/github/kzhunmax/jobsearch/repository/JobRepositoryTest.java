@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.data.domain.Pageable;
 
 import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,29 +31,100 @@ class JobRepositoryTest extends AbstractPostgresTest {
     void setUp() {
         testUser = createUser(TEST_USERNAME);
         userRepository.save(testUser);
+    }
 
+    @Test
+    @DisplayName("Should find all active jobs with pagination when active jobs exist")
+    void findByActiveTrue_whenActiveJobsExist_shouldReturnOnlyActiveJobs() {
         Job activeJob = createJob(testUser, true);
         jobRepository.save(activeJob);
 
-
         Job inactiveJob = createJob(testUser, false);
         jobRepository.save(inactiveJob);
-    }
 
-    @Test
-    @DisplayName("Should find all active jobs with pagination")
-    void findByActiveTrue_whenJobExists_shouldReturnOnlyActiveJobs() {
         Page<Job> jobs = jobRepository.findByActiveTrue(PageRequest.of(0, 10));
 
-        assertThat(jobs).hasSize(1);
-        assertThat(jobs.getContent().getFirst().getTitle()).isEqualTo("Java Dev");
+        assertThat(jobs.getContent()).hasSize(1);
+        assertThat(jobs.getTotalElements()).isEqualTo(1);
+        assertThat(jobs.getContent().getFirst().isActive()).isTrue();
     }
 
     @Test
-    @DisplayName("Should find all active jobs with pagination")
-    void findByPostedBy_whenUserExist_shouldReturnAll() {
+    @DisplayName("Should return empty page when no active jobs exist")
+    void findByActiveTrue_whenNoActiveJobsExist_shouldReturnEmptyPage() {
+        Job inactiveJob = createJob(testUser, false);
+        jobRepository.save(inactiveJob);
+
+        Page<Job> jobs = jobRepository.findByActiveTrue(PageRequest.of(0, 10));
+
+        assertThat(jobs.getContent()).isEmpty();
+        assertThat(jobs.getTotalElements()).isZero();
+    }
+
+    @Test
+    @DisplayName("Should respect pagination for active jobs")
+    void findByActiveTrue_withPagination_shouldReturnPaginatedResults() {
+        for (int i = 0; i < 5; i++) {
+            Job activeJob = createJob(testUser, true);
+            jobRepository.save(activeJob);
+        }
+
+        Pageable pageable = PageRequest.of(0, 3);
+        Page<Job> jobsPage1 = jobRepository.findByActiveTrue(pageable);
+
+        assertThat(jobsPage1.getContent()).hasSize(3);
+        assertThat(jobsPage1.getTotalElements()).isEqualTo(5);
+        assertThat(jobsPage1.getTotalPages()).isEqualTo(2);
+
+        Page<Job> jobsPage2 = jobRepository.findByActiveTrue(PageRequest.of(1, 3));
+        assertThat(jobsPage2.getContent()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("Should find all jobs posted by a user with pagination when jobs exist")
+    void findByPostedBy_whenUserHasJobs_shouldReturnAllJobsForUser() {
+        Job job1 = createJob(testUser, true);
+        jobRepository.save(job1);
+
+        Job job2 = createJob(testUser, false);
+        jobRepository.save(job2);
+
         Page<Job> jobs = jobRepository.findByPostedBy(testUser, PageRequest.of(0, 10));
 
-        assertThat(jobs).hasSize(2);
+        assertThat(jobs.getContent()).hasSize(2);
+        assertThat(jobs.getTotalElements()).isEqualTo(2);
+        assertThat(jobs.getContent().get(0).getPostedBy()).isEqualTo(testUser);
+        assertThat(jobs.getContent().get(1).getPostedBy()).isEqualTo(testUser);
+    }
+
+    @Test
+    @DisplayName("Should return empty page when user has no jobs")
+    void findByPostedBy_whenUserHasNoJobs_shouldReturnEmptyPage() {
+        User anotherUser = createUser("anotherUser");
+        userRepository.save(anotherUser);
+
+        Page<Job> jobs = jobRepository.findByPostedBy(anotherUser, PageRequest.of(0, 10));
+
+        assertThat(jobs.getContent()).isEmpty();
+        assertThat(jobs.getTotalElements()).isZero();
+    }
+
+    @Test
+    @DisplayName("Should respect pagination for jobs posted by a user")
+    void findByPostedBy_withPagination_shouldReturnPaginatedResults() {
+        for (int i = 0; i < 5; i++) {
+            Job job = createJob(testUser, true);
+            jobRepository.save(job);
+        }
+
+        Pageable pageable = PageRequest.of(0, 3);
+        Page<Job> jobsPage1 = jobRepository.findByPostedBy(testUser, pageable);
+
+        assertThat(jobsPage1.getContent()).hasSize(3);
+        assertThat(jobsPage1.getTotalElements()).isEqualTo(5);
+        assertThat(jobsPage1.getTotalPages()).isEqualTo(2);
+
+        Page<Job> jobsPage2 = jobRepository.findByPostedBy(testUser, PageRequest.of(1, 3));
+        assertThat(jobsPage2.getContent()).hasSize(2);
     }
 }
