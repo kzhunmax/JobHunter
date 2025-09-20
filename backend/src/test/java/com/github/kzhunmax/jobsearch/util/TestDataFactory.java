@@ -1,16 +1,18 @@
 package com.github.kzhunmax.jobsearch.util;
 
+import com.github.kzhunmax.jobsearch.dto.request.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.request.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.request.UserLoginDTO;
 import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
+import com.github.kzhunmax.jobsearch.dto.response.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.dto.response.UserResponseDTO;
-import com.github.kzhunmax.jobsearch.model.Job;
-import com.github.kzhunmax.jobsearch.model.Role;
-import com.github.kzhunmax.jobsearch.model.User;
+import com.github.kzhunmax.jobsearch.model.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -64,6 +66,36 @@ public class TestDataFactory {
                 .postedBy(user)
                 .build();
     }
+
+    public static JobApplication createJobApplication(User user, Job job) {
+        JobApplication app = JobApplication.builder()
+                .job(job)
+                .candidate(user)
+                .status(ApplicationStatus.APPLIED)
+                .appliedAt(Instant.MIN)
+                .coverLetter("Cover Letter")
+                .build();
+        app.setId(TEST_ID);
+        return app;
+    }
+
+    public static JobApplicationRequestDTO createJobApplicationRequestDTO(Long jobId, String coverLetter) {
+        return new JobApplicationRequestDTO(jobId, coverLetter);
+    }
+
+    public static JobApplicationResponseDTO createJobApplicationResponseDTO(JobApplication app) {
+        return new JobApplicationResponseDTO(
+                app.getId(),
+                app.getJob().getId(),
+                app.getJob().getTitle(),
+                app.getJob().getCompany(),
+                app.getCandidate().getUsername(),
+                app.getStatus().name(),
+                app.getAppliedAt().toString(),
+                app.getCoverLetter()
+        );
+    }
+
 
     public static JobRequestDTO createJobRequest() {
         return new JobRequestDTO("Java Dev", "Backend dev", "BigTech", "Remote", 5000.0);

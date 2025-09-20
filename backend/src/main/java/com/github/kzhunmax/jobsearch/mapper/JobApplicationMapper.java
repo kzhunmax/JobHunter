@@ -8,14 +8,19 @@ import org.springframework.stereotype.Component;
 public class JobApplicationMapper {
 
     public JobApplicationResponseDTO toDto(JobApplication application) {
+        if (application == null) return null;
+
+        var job = application.getJob();
+        var candidate = application.getCandidate();
+
         return new JobApplicationResponseDTO(
                 application.getId(),
-                application.getJob().getId(),
-                application.getJob().getTitle(),
-                application.getJob().getCompany(),
-                application.getCandidate().getUsername(),
-                application.getStatus().name(),
-                application.getAppliedAt().toString(),
+                job != null ? job.getId() : null,
+                job != null ? job.getTitle() : null,
+                job != null ? job.getCompany() : null,
+                candidate != null ? candidate.getUsername() : null,
+                application.getStatus() != null ? application.getStatus().name() : null,
+                application.getAppliedAt() != null ? application.getAppliedAt().toString() : null,
                 application.getCoverLetter()
         );
     }
