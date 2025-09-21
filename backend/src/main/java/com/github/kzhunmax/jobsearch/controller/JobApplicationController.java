@@ -23,7 +23,7 @@ public class JobApplicationController {
 
     @PostMapping("/apply/{jobId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<JobApplicationResponseDTO> apply(@PathVariable JobApplicationRequestDTO requestDto, Authentication authentication) {
+    public ResponseEntity<JobApplicationResponseDTO> apply(@PathVariable Long jobId, @RequestBody JobApplicationRequestDTO requestDto, Authentication authentication) {
         String username = authentication.getName();
         JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(requestDto.jobId(), username, requestDto.coverLetter());
         return ResponseEntity.ok(responseDto);
@@ -44,7 +44,7 @@ public class JobApplicationController {
 
     @PatchMapping("/{appId}/status")
     @PreAuthorize("@jobSecurityService.canUpdateApplication(#appId, #status, authentication)")
-    public ResponseEntity<JobApplicationResponseDTO> updateStatus(@PathVariable Long appId, @RequestParam @Valid ApplicationStatus status) {
+    public ResponseEntity<JobApplicationResponseDTO> updateStatus(@PathVariable Long appId, @RequestParam ApplicationStatus status) {
         return ResponseEntity.ok(jobApplicationService.updateApplicationStatus(appId, status));
     }
 }

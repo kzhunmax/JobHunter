@@ -76,6 +76,17 @@ public class TestDataFactory {
                 .build();
     }
 
+    public static JobApplication createJobApplication(Long id, User user, Job job) {
+        return JobApplication.builder()
+                .id(id)
+                .job(job)
+                .candidate(user)
+                .status(ApplicationStatus.APPLIED)
+                .appliedAt(Instant.parse("2025-01-01T00:00:00Z"))
+                .coverLetter("Cover Letter")
+                .build();
+    }
+
     public static JobApplicationRequestDTO createJobApplicationRequestDTO(Long jobId, String coverLetter) {
         return new JobApplicationRequestDTO(jobId, coverLetter);
     }
