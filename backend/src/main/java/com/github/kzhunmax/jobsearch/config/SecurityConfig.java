@@ -2,6 +2,7 @@ package com.github.kzhunmax.jobsearch.config;
 
 import com.github.kzhunmax.jobsearch.security.JwtAuthFilter;
 import com.github.kzhunmax.jobsearch.security.filter.LoggingFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +40,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/jobs/**").permitAll()
-
                         .requestMatchers(HttpMethod.POST, "/api/jobs/**").hasRole("RECRUITER")
                         .requestMatchers(HttpMethod.PUT, "/api/jobs/**").hasRole("RECRUITER")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").hasRole("RECRUITER")
@@ -47,6 +47,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) ->
+                                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                )
                 .authenticationManager(authenticationManager(http.getSharedObject(AuthenticationConfiguration.class)))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(loggingFilter, JwtAuthFilter.class);

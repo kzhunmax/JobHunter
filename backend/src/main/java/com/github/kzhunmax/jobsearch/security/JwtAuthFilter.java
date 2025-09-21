@@ -34,12 +34,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     ) throws IOException, ServletException {
         final String jwt = extractJwtFromRequest(request);
-        if (jwt == null) {
-            filterChain.doFilter(request, response);
-            return;
+
+        if (jwt != null) {
+            processJwtAuthentication(request, jwt);
         }
 
-        processJwtAuthentication(request, jwt);
         filterChain.doFilter(request, response);
     }
 

@@ -39,14 +39,16 @@ public class UserRegistrationValidator {
     }
 
     private void validateUsernameUniqueness(UserRegistrationDTO dto) {
-        if (userRepository.existsByUsername(dto.username().trim())) {
-            throw new UsernameExistsException("Username already taken");
+        String username = dto.username().trim();
+        if (userRepository.existsByUsername(username)) {
+            throw new UsernameExistsException(username);
         }
     }
 
     private void validateEmailUniqueness(UserRegistrationDTO dto) {
-        if (userRepository.existsByEmail(dto.email().trim())) {
-            throw new EmailExistsException("Email already registered");
+        String email = dto.email().trim();
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailExistsException(email);
         }
     }
 
