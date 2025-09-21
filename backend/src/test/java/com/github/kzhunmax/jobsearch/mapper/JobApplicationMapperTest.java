@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("JobApplicationMapper Tests")
 public class JobApplicationMapperTest {

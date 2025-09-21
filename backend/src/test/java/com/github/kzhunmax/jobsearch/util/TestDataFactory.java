@@ -12,7 +12,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -68,15 +67,13 @@ public class TestDataFactory {
     }
 
     public static JobApplication createJobApplication(User user, Job job) {
-        JobApplication app = JobApplication.builder()
+        return JobApplication.builder()
                 .job(job)
                 .candidate(user)
                 .status(ApplicationStatus.APPLIED)
-                .appliedAt(Instant.MIN)
+                .appliedAt(Instant.parse("2025-01-01T00:00:00Z"))
                 .coverLetter("Cover Letter")
                 .build();
-        app.setId(TEST_ID);
-        return app;
     }
 
     public static JobApplicationRequestDTO createJobApplicationRequestDTO(Long jobId, String coverLetter) {
