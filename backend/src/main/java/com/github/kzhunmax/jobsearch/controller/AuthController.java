@@ -41,7 +41,10 @@ public class AuthController {
     private final UserDetailsServiceImpl userDetailsService;
 
     @PostMapping("/register")
-    @Operation(summary = "Register new user", description = "Creates a new user account and returns user details")
+    @Operation(
+            summary = "Register new user",
+            description = "Creates a new user account with the provided details and returns user information"
+    )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
@@ -50,10 +53,19 @@ public class AuthController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "Invalid input"
+                    description = "Invalid input data or validation errors"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "User with provided username or email already exists"
             )
     })
     public ResponseEntity<ApiResponse<UserResponseDTO>> registerUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "User registration data",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = UserRegistrationDTO.class))
+            )
             @Valid @RequestBody UserRegistrationDTO userRegistrationDTO) {
 
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
@@ -65,19 +77,33 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "User login", description = "Authenticates user and return JWT access & refresh tokens")
+    @Operation(
+            summary = "User login",
+            description = "Authenticates user credentials and returns JWT access & refresh tokens"
+    )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Login successfully",
+                    description = "Login successful",
                     content = @Content(schema = @Schema(implementation = JwtResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Missing or invalid credentials format"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "Invalid credentials"
+                    description = "Invalid username/email or password"
             )
     })
-    public ResponseEntity<ApiResponse<JwtResponse>> login(@Valid @RequestBody UserLoginDTO loginDto) {
+    public ResponseEntity<ApiResponse<JwtResponse>> login(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "User login credentials",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = UserLoginDTO.class))
+            )
+            @Valid @RequestBody UserLoginDTO loginDto
+    ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Login attempt | requestId={}, username={}", requestId, loginDto.usernameOrEmail());
 
@@ -90,7 +116,10 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "Refresh JWT token", description = "Generates new access & refresh tokens using a valid refresh token")
+    @Operation(
+            summary = "Refresh JWT token",
+            description = "Generates new access and refresh tokens using a valid refresh token"
+    )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -99,14 +128,26 @@ public class AuthController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "Missing refresh token"
+                    description = "Missing refresh token in request"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
                     description = "Invalid or expired refresh token"
             )
     })
-    public ResponseEntity<ApiResponse<JwtResponse>> refresh(@RequestBody Map<String, String> request) {
+    public ResponseEntity<ApiResponse<JwtResponse>> refresh(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Refresh token request",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = "{\"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"}"
+                            )
+                    )
+            )
+            @RequestBody Map<String, String> request
+    ) {
         String refreshToken = request.get("refreshToken");
 
         if (refreshToken == null) {

@@ -99,10 +99,10 @@ class JobApplicationControllerTest {
                         .content(objectMapper.writeValueAsString(jobApplicationRequestDTO)))
 
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(TEST_ID))
-                .andExpect(jsonPath("$.jobId").value(TEST_ID))
-                .andExpect(jsonPath("$.candidateUsername").value(TEST_USERNAME))
-                .andExpect(jsonPath("$.status").value("APPLIED"));
+                .andExpect(jsonPath("$.data.id").value(TEST_ID))
+                .andExpect(jsonPath("$.data.jobId").value(TEST_ID))
+                .andExpect(jsonPath("$.data.candidateUsername").value(TEST_USERNAME))
+                .andExpect(jsonPath("$.data.status").value("APPLIED"));
     }
 
     @Test
@@ -117,7 +117,7 @@ class JobApplicationControllerTest {
 
         mockMvc.perform(get("/api/applications/my-applications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.jobApplicationResponseDTOList[0].id").value(TEST_ID));
+                .andExpect(jsonPath("$.data[0].id").value(TEST_ID));
     }
 
     @Test
@@ -135,7 +135,7 @@ class JobApplicationControllerTest {
                         .with(csrf())
                         .param("status", "REJECTED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("REJECTED"));
+                .andExpect(jsonPath("$.data.status").value("REJECTED"));
     }
 
     @Test

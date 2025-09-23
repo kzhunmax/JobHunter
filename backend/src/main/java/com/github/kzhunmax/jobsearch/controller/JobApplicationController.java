@@ -3,10 +3,16 @@ package com.github.kzhunmax.jobsearch.controller;
 import com.github.kzhunmax.jobsearch.dto.request.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.model.ApplicationStatus;
+import com.github.kzhunmax.jobsearch.payload.ApiResponse;
 import com.github.kzhunmax.jobsearch.service.JobApplicationService;
-import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import org.slf4j.MDC;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
@@ -18,33 +24,129 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/applications")
 @RequiredArgsConstructor
+@Tag(name = "Job Applications", description = "Manage job applications and application status")
 public class JobApplicationController {
+
+    private static final String REQUEST_ID_MDC_KEY = "requestId";
+
     private final JobApplicationService jobApplicationService;
 
     @PostMapping("/apply/{jobId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<JobApplicationResponseDTO> apply(@PathVariable Long jobId, @RequestBody JobApplicationRequestDTO requestDto, Authentication authentication) {
+    @Operation(
+            summary = "Apply to a job",
+            description = "Submit a job application for the specified job position"
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Application submitted successfully",
+                    content = @Content(schema = @Schema(implementation = JobApplicationResponseDTO.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid job ID or application data"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Job not found"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "Already applied to this job"
+            )
+    })
+    public ResponseEntity<ApiResponse<JobApplicationResponseDTO>> apply(
+            @Parameter(description = "ID of the job to apply for", example = "1")
+            @PathVariable Long jobId,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Job application details including cover letter",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = JobApplicationRequestDTO.class))
+            )
+            @RequestBody JobApplicationRequestDTO requestDto, Authentication authentication) {
         String username = authentication.getName();
         JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(requestDto.jobId(), username, requestDto.coverLetter());
-        return ResponseEntity.ok(responseDto);
+        return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
     }
 
     @GetMapping("/job/{jobId}")
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication) or hasRole('ADMIN')")
-    public ResponseEntity<PagedModel<EntityModel<JobApplicationResponseDTO>>> getApplicationForJob(@PathVariable Long jobId, Pageable pageable) {
-        return ResponseEntity.ok(jobApplicationService.getApplicationsForJob(jobId, pageable));
+    @Operation(
+            summary = "Get applications for a job",
+            description = "Retrieve all applications for a specific job (recruiters and admins only)"
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Applications retrieved successfully"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - not the job owner or admin"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Job not found"
+            )
+    })
+    public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getApplicationForJob(
+            @Parameter(description = "ID of the job", example = "1")
+            @PathVariable Long jobId,
+            Pageable pageable) {
+        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsForJob(jobId, pageable);
+        return ApiResponse.success(applications, MDC.get(REQUEST_ID_MDC_KEY));
     }
 
     @GetMapping("/my-applications")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<PagedModel<EntityModel<JobApplicationResponseDTO>>> getMyApplications(Authentication authentication, Pageable pageable) {
+    @Operation(
+            summary = "Get my applications",
+            description = "Retrieve all job applications submitted by the current user"
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Applications retrieved successfully"
+    )
+    public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getMyApplications(Authentication authentication, Pageable pageable) {
         String username = authentication.getName();
-        return ResponseEntity.ok(jobApplicationService.getApplicationsByCandidate(username, pageable));
+        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(username, pageable);
+        return ApiResponse.success(applications, MDC.get(REQUEST_ID_MDC_KEY));
     }
 
     @PatchMapping("/{appId}/status")
     @PreAuthorize("@jobSecurityService.canUpdateApplication(#appId, #status, authentication)")
-    public ResponseEntity<JobApplicationResponseDTO> updateStatus(@PathVariable Long appId, @RequestParam ApplicationStatus status) {
-        return ResponseEntity.ok(jobApplicationService.updateApplicationStatus(appId, status));
+    @Operation(
+            summary = "Update application status",
+            description = "Update the status of a job application (recruiters and admins only)"
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Status updated successfully",
+                    content = @Content(schema = @Schema(implementation = JobApplicationResponseDTO.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - not authorized to update this application"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Application not found"
+            )
+    })
+    public ResponseEntity<ApiResponse<JobApplicationResponseDTO>> updateStatus(
+            @Parameter(description = "ID of the application", example = "1")
+            @PathVariable Long appId,
+
+            @Parameter(
+                    description = "New application status",
+                    example = "UNDER_REVIEW",
+                    schema = @Schema(implementation = ApplicationStatus.class)
+            )
+            @RequestParam ApplicationStatus status) {
+        JobApplicationResponseDTO updatedApplication = jobApplicationService.updateApplicationStatus(appId, status);
+        return ApiResponse.success(updatedApplication, MDC.get(REQUEST_ID_MDC_KEY));
     }
 }
