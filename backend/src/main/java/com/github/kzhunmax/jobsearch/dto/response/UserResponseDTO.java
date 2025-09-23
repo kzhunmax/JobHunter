@@ -2,12 +2,37 @@ package com.github.kzhunmax.jobsearch.dto.response;
 
 import com.github.kzhunmax.jobsearch.model.Role;
 import com.github.kzhunmax.jobsearch.model.User;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Set;
 
-public record UserResponseDTO(String username, String email, Set<Role> roles) {
+@Schema(
+        description = "User data response object containing basic user information",
+        example = """
+                {
+                    "username": "user",
+                    "email": "user@xample.com"
+                    "roles": ["ROLE_USER"]
+                }
+                """
+)
+public record UserResponseDTO(
+
+        @Schema(description = "Unique username identifier", example = "user", minLength = 3, maxLength = 50)
+        String username,
+
+        @Schema(description = "User's email address", example = "user@example", format = "email")
+        String email,
+
+        @Schema(description = "Set of user roles defining access permissions", example = "[\"ROLE_USER\"]")
+        Set<Role> roles
+) {
     public static UserResponseDTO fromEntity(User user) {
-        return new UserResponseDTO(user.getUsername(), user.getEmail(), user.getRoles());
+        return new UserResponseDTO(
+                user.getUsername(),
+                user.getEmail(),
+                user.getRoles()
+        );
     }
 }
 

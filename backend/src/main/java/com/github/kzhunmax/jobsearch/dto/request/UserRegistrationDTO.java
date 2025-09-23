@@ -9,7 +9,18 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Set;
 
-@Schema(description = "DTO for new user registration")
+@Schema(
+        description = "DTO for new user registration",
+        example = """
+                {
+                    "username": "user",
+                    "email": "user@example.com",
+                    "password": "Password123",
+                    "confirmPassword": "Password123",
+                    "roles": ["ROLE_USER"]
+                }
+                """
+)
 public record UserRegistrationDTO(
 
         @Schema(description = "Unique username", example = "user", minLength = 3, maxLength = 50)

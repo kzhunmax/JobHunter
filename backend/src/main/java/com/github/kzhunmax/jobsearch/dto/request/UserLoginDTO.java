@@ -5,7 +5,13 @@ import jakarta.validation.constraints.NotBlank;
 
 @Schema(
         description = "DTO for login",
-        requiredProperties = {"usernameOrEmail", "password"}
+        requiredProperties = {"usernameOrEmail", "password"},
+        example = """
+                {
+                    "usernameOrEmail": "user@example.com",
+                    "password": "Password123"
+                }
+                """
 )
 public record UserLoginDTO(
 
