@@ -8,6 +8,11 @@ import com.github.kzhunmax.jobsearch.payload.ApiResponse;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +31,7 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Authentication", description = "Endpoints for user registration, login, and token management")
 public class AuthController {
 
     private static final String REQUEST_ID_MDC_KEY = "requestId";
@@ -35,6 +41,18 @@ public class AuthController {
     private final UserDetailsServiceImpl userDetailsService;
 
     @PostMapping("/register")
+    @Operation(summary = "Register new user", description = "Creates a new user account and returns user details")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "User successfully registered",
+                    content = @Content(schema = @Schema(implementation = UserResponseDTO.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid input"
+            )
+    })
     public ResponseEntity<ApiResponse<UserResponseDTO>> registerUser(
             @Valid @RequestBody UserRegistrationDTO userRegistrationDTO) {
 
@@ -47,6 +65,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "User login", description = "Authenticates user and return JWT access & refresh tokens")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Login successfully",
+                    content = @Content(schema = @Schema(implementation = JwtResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid credentials"
+            )
+    })
     public ResponseEntity<ApiResponse<JwtResponse>> login(@Valid @RequestBody UserLoginDTO loginDto) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Login attempt | requestId={}, username={}", requestId, loginDto.usernameOrEmail());
@@ -60,6 +90,22 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Refresh JWT token", description = "Generates new access & refresh tokens using a valid refresh token")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Token successfully refreshed",
+                    content = @Content(schema = @Schema(implementation = JwtResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Missing refresh token"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid or expired refresh token"
+            )
+    })
     public ResponseEntity<ApiResponse<JwtResponse>> refresh(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
 
