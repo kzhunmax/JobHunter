@@ -27,15 +27,12 @@ public class UserRegistrationValidatorTest {
     @Mock
     private UserRepository userRepository;
 
-    private Pattern passwordPattern;
-    private Pattern emailPattern;
-
     private UserRegistrationValidator validator;
 
     @BeforeEach
     void setUp() {
-        passwordPattern = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$");
-        emailPattern = Pattern.compile("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$");
+        Pattern passwordPattern = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$");
+        Pattern emailPattern = Pattern.compile("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$");
 
         validator = new UserRegistrationValidator(userRepository, passwordPattern, emailPattern);
     }

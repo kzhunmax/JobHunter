@@ -9,6 +9,7 @@ import com.github.kzhunmax.jobsearch.model.JobApplication;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.security.JobSecurityService;
 import com.github.kzhunmax.jobsearch.security.JwtService;
+import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.service.JobApplicationService;
 import com.github.kzhunmax.jobsearch.service.JobService;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +50,9 @@ class JobApplicationControllerTest {
 
     @MockitoBean
     private JobApplicationService jobApplicationService;
+
+    @MockitoBean
+    private UserDetailsServiceImpl userDetailsService;
 
     @MockitoBean
     private JobService jobService;
