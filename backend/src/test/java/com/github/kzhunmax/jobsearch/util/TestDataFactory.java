@@ -128,7 +128,7 @@ public class TestDataFactory {
     }
 
     public static UserRegistrationDTO createUserRegistrationDTO() {
-        return new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "Password123", "Password123", Set.of(Role.ROLE_USER));
+        return new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "Password123", "Password123", Set.of(Role.ROLE_CANDIDATE));
     }
 
     public static UserLoginDTO createUserLoginDTO() {
@@ -136,7 +136,7 @@ public class TestDataFactory {
     }
 
     public static UserResponseDTO createUserResponseDTO(Long id) {
-        return new UserResponseDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", Set.of(Role.ROLE_USER));
+        return new UserResponseDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", Set.of(Role.ROLE_CANDIDATE));
     }
 
     public static UserDetails createUserDetails(String username) {
@@ -147,7 +147,7 @@ public class TestDataFactory {
                 true,
                 true,
                 true,
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                List.of(new SimpleGrantedAuthority("ROLE_CANDIDATE"))
         );
     }
 }

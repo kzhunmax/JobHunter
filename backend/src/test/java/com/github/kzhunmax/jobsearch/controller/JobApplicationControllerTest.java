@@ -86,8 +86,8 @@ class JobApplicationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = TEST_USERNAME, roles = "USER")
-    @DisplayName("Should apply for job as USER")
+    @WithMockUser(username = TEST_USERNAME, roles = "CANDIDATE")
+    @DisplayName("Should apply for job as CANDIDATE")
     void applyForJob_asUser_returnsResponse() throws Exception {
 
         when(jobApplicationService.applyToJob(anyLong(), anyString(), anyString()))
@@ -106,8 +106,8 @@ class JobApplicationControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    @DisplayName("Should get my applications as USER")
+    @WithMockUser(roles = "CANDIDATE")
+    @DisplayName("Should get my applications as CANDIDATE")
     void getMyApplications_asUser_returnsApplications() throws Exception {
         PagedModel<EntityModel<JobApplicationResponseDTO>> paged =
                 PagedModel.of(List.of(EntityModel.of(jobApplicationResponseDTO)), new PagedModel.PageMetadata(1, 0, 1));
@@ -121,7 +121,7 @@ class JobApplicationControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "USER")
+    @WithMockUser(roles = "CANDIDATE")
     @DisplayName("Should update status if authorized")
     void updateStatus_asAuthorizedUser_returnsUpdatedApplication() throws Exception {
         jobApplication.setStatus(ApplicationStatus.REJECTED);

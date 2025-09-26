@@ -50,6 +50,6 @@ public class AuthService {
     }
 
     private Set<Role> resolveRoles(Set<Role> requestedRoles) {
-        return new HashSet<>(requestedRoles != null ? requestedRoles : Set.of(Role.ROLE_USER));
+        return new HashSet<>(requestedRoles != null ? requestedRoles : Set.of(Role.ROLE_CANDIDATE));
     }
 }

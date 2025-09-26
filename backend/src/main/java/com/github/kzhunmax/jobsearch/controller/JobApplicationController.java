@@ -32,7 +32,7 @@ public class JobApplicationController {
     private final JobApplicationService jobApplicationService;
 
     @PostMapping("/apply/{jobId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('CANDIDATE')")
     @Operation(
             summary = "Apply to a job",
             description = "Submit a job application for the specified job position"
@@ -100,7 +100,7 @@ public class JobApplicationController {
     }
 
     @GetMapping("/my-applications")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('CANDIDATE')")
     @Operation(
             summary = "Get my applications",
             description = "Retrieve all job applications submitted by the current user"

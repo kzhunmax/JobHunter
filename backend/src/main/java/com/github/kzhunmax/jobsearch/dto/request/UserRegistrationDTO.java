@@ -17,7 +17,7 @@ import java.util.Set;
                     "email": "user@example.com",
                     "password": "Password123",
                     "confirmPassword": "Password123",
-                    "roles": ["ROLE_USER"]
+                    "roles": ["ROLE_CANDIDATE"]
                 }
                 """
 )
@@ -35,7 +35,7 @@ public record UserRegistrationDTO(
         @Schema(description = "Confirmation of user password", example = "Password123", format = "password")
         String confirmPassword,
 
-        @Schema(description = "Roles of user in system", example = "[\"ROLE_USER\"]", allowableValues = {"ROLE_USER", "ROLE_RECRUITER", "ROLE_ADMIN"})
+        @Schema(description = "Roles of user in system", example = "[\"ROLE_CANDIDATE\"]", allowableValues = {"ROLE_CANDIDATE", "ROLE_RECRUITER", "ROLE_ADMIN"})
         @NotEmpty Set<Role> roles
 ) {
     public boolean isPasswordConfirmed() {

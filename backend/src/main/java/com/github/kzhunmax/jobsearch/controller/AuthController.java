@@ -51,9 +51,25 @@ public class AuthController {
                     responseCode = "201",
                     description = "User successfully registered",
                     content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = UserResponseDTO.class)
-    )
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": {
+                                                "username": "user",
+                                                "email": "user@example.com",
+                                                "roles": [
+                                                  "ROLE_CANDIDATE"
+                                                ]
+                                              },
+                                              "errors": [],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",

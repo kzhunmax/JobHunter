@@ -12,7 +12,7 @@ import java.util.Set;
                 {
                     "username": "user",
                     "email": "user@xample.com"
-                    "roles": ["ROLE_USER"]
+                    "roles": ["ROLE_CANDIDATE"]
                 }
                 """
 )
@@ -24,7 +24,7 @@ public record UserResponseDTO(
         @Schema(description = "User's email address", example = "user@example", format = "email")
         String email,
 
-        @Schema(description = "Set of user roles defining access permissions", example = "[\"ROLE_USER\"]")
+        @Schema(description = "Set of user roles defining access permissions", example = "[\"ROLE_CANDIDATE\"]")
         Set<Role> roles
 ) {
     public static UserResponseDTO fromEntity(User user) {
