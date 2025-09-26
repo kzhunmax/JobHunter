@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -31,7 +33,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain
-
     ) throws IOException, ServletException {
         final String jwt = extractJwtFromRequest(request);
 
@@ -43,17 +44,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private void processJwtAuthentication(HttpServletRequest request, String jwt) {
-        String username = jwtService.extractUsername(jwt);
+        try {
+            String username = jwtService.extractUsername(jwt);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                authenticateUser(request, userDetails);
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    authenticateUser(request, userDetails);
+                }
             }
+        } catch (Exception e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
         }
-
-
     }
 
     private String extractJwtFromRequest(HttpServletRequest request) {

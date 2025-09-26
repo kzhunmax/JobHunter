@@ -117,7 +117,7 @@ class JobApplicationControllerTest {
 
         mockMvc.perform(get("/api/applications/my-applications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].id").value(TEST_ID));
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_ID));
     }
 
     @Test

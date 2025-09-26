@@ -10,6 +10,7 @@ import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,15 +50,56 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
                     description = "User successfully registered",
-                    content = @Content(schema = @Schema(implementation = UserResponseDTO.class))
+                    content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = UserResponseDTO.class)
+    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "Invalid input data or validation errors"
+                    description = "Invalid input data or validation errors",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "INVALID_DATA",
+                                                  "message": "Passwords don't match"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
-                    description = "User with provided username or email already exists"
+                    description = "User with provided username or email already exists",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "USERNAME_TAKEN",
+                                                  "message": "Username recruiter is already taken"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     public ResponseEntity<ApiResponse<UserResponseDTO>> registerUser(
