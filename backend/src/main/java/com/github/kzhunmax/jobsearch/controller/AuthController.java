@@ -143,15 +143,69 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "Login successful",
-                    content = @Content(schema = @Schema(implementation = JwtResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": {
+                                                "accessToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMSIsImlhdCI6MTc1OTA2OTA3MywiZXhwIjoxNzU5MDY5OTczfQ.3BBCmH6sNnPoRcp5tOUQ30HV5kYm8jxCeGeC3cFueG4",
+                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMSIsImlhdCI6MTc1OTA2OTA3MywiZXhwIjoxNzU5NjczODczfQ._Q5GWHUTlcVBZo1AxxewpcMZu_DN658cRrKUTzBb5kc"
+                                              },
+                                              "errors": [],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "Missing or invalid credentials format"
+                    description = "Missing or invalid credentials format",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                                "data": null,
+                                                "errors": [
+                                                  {
+                                                    "code": "VALIDATION_FAILED",
+                                                    "message": "Validation failed"
+                                                  }
+                                                ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "Invalid username/email or password"
+                    description = "Invalid username/email or password",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "AUTH_FAILED",
+                                                  "message": "Invalid username or password"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     public ResponseEntity<ApiResponse<JwtResponse>> login(
@@ -182,15 +236,69 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "Token successfully refreshed",
-                    content = @Content(schema = @Schema(implementation = JwtResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": {
+                                                  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ...",
+                                                  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ..."
+                                              },
+                                              "errors": [],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "Missing refresh token in request"
+                    description = "Missing refresh token in request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "MISSING_TOKEN",
+                                                  "message": "Refresh token is required"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "Invalid or expired refresh token"
+                    description = "Invalid or expired refresh token",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "INVALID_REFRESH",
+                                                  "message": "Refresh token is invalid or expired"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     public ResponseEntity<ApiResponse<JwtResponse>> refresh(

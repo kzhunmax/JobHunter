@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
         example = """
                 {
                     "jobId": 123,
-                    "coverLetter": "I am very interested in this position because...",
+                    "coverLetter": "I am very interested in this position because..."
                 }
                 """
 )

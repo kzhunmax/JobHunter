@@ -8,6 +8,7 @@ import com.github.kzhunmax.jobsearch.service.JobApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,19 +42,98 @@ public class JobApplicationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "Application submitted successfully",
-                    content = @Content(schema = @Schema(implementation = JobApplicationResponseDTO.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": {
+                                                "id": 1,
+                                                "jobId": 1,
+                                                "jobTitle": "Java Developer",
+                                                "company": "TechCorp",
+                                                "candidateUsername": "user",
+                                                "status": "APPLIED",
+                                                "appliedAt": "2025-09-22T10:15:30Z",
+                                                "coverLetter": "Some text in cover letter"
+                                              },
+                                              "errors": [],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "Invalid job ID or application data"
+                    description = "Invalid job ID or application data",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "JOB_NOT_FOUND",
+                                                  "message": "Job with id 3 not found"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "Job not found"
+                    description = "Job not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "JOB_NOT_FOUND",
+                                                  "message": "Job with id 3 not found"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
-                    description = "Already applied to this job"
+                    description = "Already applied to this job",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "DUPLICATE_APPLICATION",
+                                                  "message": "User has already applied to this job"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     public ResponseEntity<ApiResponse<JobApplicationResponseDTO>> apply(
@@ -67,7 +147,7 @@ public class JobApplicationController {
             )
             @RequestBody JobApplicationRequestDTO requestDto, Authentication authentication) {
         String username = authentication.getName();
-        JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(requestDto.jobId(), username, requestDto.coverLetter());
+        JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, username, requestDto.coverLetter());
         return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
     }
 
@@ -80,7 +160,46 @@ public class JobApplicationController {
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Applications retrieved successfully"
+                    description = "Applications retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": {
+                                                "links": [
+                                                  {
+                                                    "rel": "self",
+                                                    "href": "http://localhost:8080/api/applications/job/1?page=0&size=20"
+                                                  }
+                                                ],
+                                                "content": [
+                                                  {
+                                                    "id": 1,
+                                                    "jobId": 1,
+                                                    "jobTitle": "Java Developer",
+                                                    "company": "TechCorp",
+                                                    "candidateUsername": "user",
+                                                    "status": "APPLIED",
+                                                    "appliedAt": "2025-09-22T10:15:30Z",
+                                                    "coverLetter": "CV",
+                                                    "links": []
+                                                  }
+                                                ],
+                                                "page": {
+                                                  "size": 20,
+                                                  "totalElements": 1,
+                                                  "totalPages": 1,
+                                                  "number": 0
+                                                }
+                                              },
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
@@ -88,7 +207,26 @@ public class JobApplicationController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "Job not found"
+                    description = "Job not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "JOB_NOT_FOUND",
+                                                  "message": "Job with id 2 not found"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getApplicationForJob(
