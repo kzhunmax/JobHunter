@@ -203,7 +203,21 @@ public class JobApplicationController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
-                    description = "Access denied - not the job owner or admin"
+                    description = "Access denied - not the job owner or admin",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "timestamp": "2025-09-30T20:17:27.866+00:00",
+                                              "status": 403,
+                                              "error": "Forbidden",
+                                              "path": "/api/applications/job/1"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
@@ -245,7 +259,35 @@ public class JobApplicationController {
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
-            description = "Applications retrieved successfully"
+            description = "Applications retrieved successfully",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ApiResponse.class),
+                    examples = @ExampleObject(
+                            value = """
+                                    {
+                                      "data": {
+                                        "links": [
+                                          {
+                                            "rel": "self",
+                                            "href": "http://localhost:8080/api/applications/my-applications?page=0&size=20"
+                                          }
+                                        ],
+                                        "content": [],
+                                        "page": {
+                                          "size": 20,
+                                          "totalElements": 0,
+                                          "totalPages": 0,
+                                          "number": 0
+                                        }
+                                      },
+                                      "errors": [],
+                                      "timestamp": "2025-09-22T10:15:30Z",
+                                      "requestId": "request-123"
+                                    }
+                                    """
+                    )
+            )
     )
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getMyApplications(Authentication authentication, Pageable pageable) {
         String username = authentication.getName();
@@ -263,15 +305,70 @@ public class JobApplicationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "Status updated successfully",
-                    content = @Content(schema = @Schema(implementation = JobApplicationResponseDTO.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": {
+                                                "id": 1,
+                                                "jobId": 1,
+                                                "jobTitle": "Java Developer",
+                                                "company": "TechCorp",
+                                                "candidateUsername": "user",
+                                                "status": "UNDER_REVIEW",
+                                                "appliedAt": "2025-09-30T17:31:57.448674Z",
+                                                "coverLetter": "CV"
+                                              },
+                                              "errors": [],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
-                    description = "Access denied - not authorized to update this application"
+                    description = "Access denied - not authorized to update this application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "timestamp": "2025-09-30T20:22:40.565+00:00",
+                                              "status": 403,
+                                              "error": "Forbidden",
+                                              "path": "/api/applications/1/status"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "Application not found"
+                    description = "Application not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "APPLICATION_NOT_FOUND",
+                                                  "message": "Application with id -1 not found"
+                                                }
+                                              ],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     public ResponseEntity<ApiResponse<JobApplicationResponseDTO>> updateStatus(
