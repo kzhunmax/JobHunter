@@ -5,12 +5,12 @@ import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.filter.LoggingFilter;
 import com.github.kzhunmax.jobsearch.security.oauth2.CustomOAuth2User;
 import com.github.kzhunmax.jobsearch.security.oauth2.CustomOAuth2UserService;
+import com.github.kzhunmax.jobsearch.service.CookieService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -32,6 +32,7 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final LoggingFilter loggingFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
+    private final CookieService cookieService;
     private final JwtService jwtService;
 
     @Bean
@@ -61,22 +62,7 @@ public class SecurityConfig {
                             String accessToken = user.accessToken();
                             String refreshToken = user.refreshToken();
 
-                            ResponseCookie accessCookie = ResponseCookie.from("access_token", accessToken)
-                                    .httpOnly(true)
-                                    .secure(true)
-                                    .path("/")
-                                    .maxAge(jwtService.getJwtExpiration() / 1000)
-                                    .build();
-
-                            ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
-                                    .httpOnly(true)
-                                    .secure(true)
-                                    .path("/")
-                                    .maxAge(jwtService.getRefreshExpiration() / 1000)
-                                    .build();
-
-                            response.addHeader("Set-Cookie", accessCookie.toString());
-                            response.addHeader("Set-Cookie", refreshCookie.toString());
+                            cookieService.addAuthCookiesToResponse(accessToken, refreshToken, jwtService, response);
                             response.sendRedirect("/api/auth/main");
                         })
                 )

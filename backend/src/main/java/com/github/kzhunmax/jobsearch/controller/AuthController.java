@@ -8,21 +8,26 @@ import com.github.kzhunmax.jobsearch.payload.ApiResponse;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.service.AuthService;
+import com.github.kzhunmax.jobsearch.service.CookieService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -37,6 +42,7 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
+    private final CookieService cookieService;
 
     @PostMapping("/register")
     @Operation(
@@ -148,7 +154,10 @@ public class AuthController {
                                             {
                                               "data": {
                                                 "accessToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMSIsImlhdCI6MTc1OTA2OTA3MywiZXhwIjoxNzU5MDY5OTczfQ.3BBCmH6sNnPoRcp5tOUQ30HV5kYm8jxCeGeC3cFueG4",
-                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMSIsImlhdCI6MTc1OTA2OTA3MywiZXhwIjoxNzU5NjczODczfQ._Q5GWHUTlcVBZo1AxxewpcMZu_DN658cRrKUTzBb5kc"
+                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMSIsImlhdCI6MTc1OTA2OTA3MywiZXhwIjoxNzU5NjczODczfQ._Q5GWHUTlcVBZo1AxxewpcMZu_DN658cRrKUTzBb5kc",
+                                                "tokenType": "Bearer",
+                                                "issuedAt": "2025-09-22T10:15:30Z",
+                                                "expiresAt": "2025-09-22T11:15:30Z"
                                               },
                                               "errors": [],
                                               "timestamp": "2025-09-22T10:15:30Z",
@@ -211,17 +220,26 @@ public class AuthController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = UserLoginDTO.class))
             )
-            @Valid @RequestBody UserLoginDTO loginDto
+            @Valid @RequestBody UserLoginDTO loginDto,
+            HttpServletResponse response
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Login attempt | requestId={}, username={}", requestId, loginDto.usernameOrEmail());
-
         UserDetails userDetails = userDetailsService.loadUserByUsername(loginDto.usernameOrEmail());
-        String jwtToken = jwtService.generateToken(userDetails);
+
+        String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
+        cookieService.addAuthCookiesToResponse(accessToken, refreshToken, jwtService, response);
+
+        Instant issuedAt = Instant.now();
+        Instant expiresAt = issuedAt.plusMillis(jwtService.getJwtExpiration());
+
+        JwtResponse jwtResponse = new JwtResponse(accessToken, refreshToken, "Bearer", issuedAt, expiresAt);
+
         log.info("Successful login | requestId={}, username={}", requestId, userDetails.getUsername());
-        return ApiResponse.success(new JwtResponse(jwtToken, refreshToken), requestId);
+
+        return ApiResponse.success(jwtResponse, requestId);
     }
 
     @PostMapping("/refresh")
@@ -241,7 +259,10 @@ public class AuthController {
                                             {
                                               "data": {
                                                   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ...",
-                                                  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ..."
+                                                  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ...",
+                                                  "tokenType": "Bearer",
+                                                  "issuedAt": "2025-09-22T10:15:30Z",
+                                                  "expiresAt": "2025-09-22T11:15:30Z"
                                               },
                                               "errors": [],
                                               "timestamp": "2025-09-22T10:15:30Z",
@@ -309,9 +330,11 @@ public class AuthController {
                             )
                     )
             )
-            @RequestBody Map<String, String> request
+            @RequestBody Map<String, String> request,
+            HttpServletResponse response
     ) {
         String refreshToken = request.get("refreshToken");
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
 
         if (refreshToken == null) {
             return ApiResponse.error(HttpStatus.BAD_REQUEST, "MISSING_TOKEN", "Refresh token is required", MDC.get(REQUEST_ID_MDC_KEY));
@@ -320,14 +343,22 @@ public class AuthController {
             String username = jwtService.extractUsername(refreshToken);
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (jwtService.isTokenValid(refreshToken, userDetails)) {
-                String newAccessToken = jwtService.generateToken(userDetails);
-                String newRefreshToken = jwtService.generateRefreshToken(userDetails);
-                return ApiResponse.success(new JwtResponse(newAccessToken, newRefreshToken), MDC.get(REQUEST_ID_MDC_KEY));
-            } else {
-                return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", MDC.get(REQUEST_ID_MDC_KEY));
+            if (!jwtService.isTokenValid(refreshToken, userDetails)) {
+                return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", requestId);
             }
+
+            String newAccessToken = jwtService.generateToken(userDetails);
+            String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+            cookieService.addAuthCookiesToResponse(newAccessToken, newRefreshToken, jwtService, response);
+
+            Instant issuedAt = Instant.now();
+            Instant expiresAt = issuedAt.plusMillis(jwtService.getJwtExpiration());
+
+            JwtResponse jwtResponse = new JwtResponse(newAccessToken, newRefreshToken, "Bearer", issuedAt, expiresAt);
+
+            return ApiResponse.success(jwtResponse, requestId);
         } catch (Exception e) {
+            log.warn("Refresh failed | requestId={}, cause={}", requestId, e.getMessage());
             return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", MDC.get(REQUEST_ID_MDC_KEY));
         }
     }
