@@ -1,12 +1,16 @@
 package com.github.kzhunmax.jobsearch.config;
 
 import com.github.kzhunmax.jobsearch.security.JwtAuthFilter;
+import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.filter.LoggingFilter;
+import com.github.kzhunmax.jobsearch.security.oauth2.CustomOAuth2User;
+import com.github.kzhunmax.jobsearch.security.oauth2.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -27,6 +31,8 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final LoggingFilter loggingFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final JwtService jwtService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -38,26 +44,50 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers( "/error").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/oauth2/**", "/error").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/jobs/**").permitAll()
-
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
-
                         .requestMatchers(HttpMethod.POST, "/api/jobs/**").hasRole("RECRUITER")
                         .requestMatchers(HttpMethod.PUT, "/api/jobs/**").hasRole("RECRUITER")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").hasRole("RECRUITER")
                         .requestMatchers("/api/applications/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                .anonymous(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                        .successHandler((request, response, authentication) -> {
+                            CustomOAuth2User user = (CustomOAuth2User) authentication.getPrincipal();
+                            String accessToken = user.accessToken();
+                            String refreshToken = user.refreshToken();
+
+                            ResponseCookie accessCookie = ResponseCookie.from("access_token", accessToken)
+                                    .httpOnly(true)
+                                    .secure(true)
+                                    .path("/")
+                                    .maxAge(jwtService.getJwtExpiration() / 1000)
+                                    .build();
+
+                            ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
+                                    .httpOnly(true)
+                                    .secure(true)
+                                    .path("/")
+                                    .maxAge(jwtService.getRefreshExpiration() / 1000)
+                                    .build();
+
+                            response.addHeader("Set-Cookie", accessCookie.toString());
+                            response.addHeader("Set-Cookie", refreshCookie.toString());
+                            response.sendRedirect("/api/auth/main");
+                        })
+                )
+
+                .sessionManagement(sm -> sm
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .exceptionHandling(eh -> eh
                         .authenticationEntryPoint((req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
                         .accessDeniedHandler((req, res, ex) -> res.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 )
-                .authenticationManager(authenticationManager(http.getSharedObject(AuthenticationConfiguration.class)))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(loggingFilter, JwtAuthFilter.class);
 
