@@ -13,8 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.hateoas.EntityModel;
@@ -24,9 +24,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
+
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Jobs", description = "Job posting management and browsing")
 public class JobController {
     private final JobService jobService;
@@ -116,9 +119,12 @@ public class JobController {
             @Valid @RequestBody JobRequestDTO dto,
             Authentication authentication
     ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         String username = authentication.getName();
+        log.info("Request [{}]: Creating job - username={}", requestId, username);
         JobResponseDTO job = jobService.createJob(dto, username);
-        return ApiResponse.created(job, MDC.get("requestId"));
+        log.info("Request [{}]: Job created successfully - username={}", requestId, username);
+        return ApiResponse.created(job, requestId);
     }
 
     @GetMapping
@@ -183,8 +189,11 @@ public class JobController {
     )
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> listJobs(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Listing all active jobs - pageable={}", requestId, pageable);
         PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getAllActiveJobs(pageable);
-        return ApiResponse.success(jobs, MDC.get("requestId"));
+        log.info("Request [{}]: Active jobs listed successfully", requestId);
+        return ApiResponse.success(jobs, requestId);
     }
 
     @GetMapping("/{jobId}")
@@ -247,8 +256,11 @@ public class JobController {
     public ResponseEntity<ApiResponse<JobResponseDTO>> getJobById(
             @Parameter(description = "ID of the job", example = "1")
             @PathVariable Long jobId) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Getting job by ID - jobId={}", requestId, jobId);
         JobResponseDTO job = jobService.getJobById(jobId);
-        return ApiResponse.success(job, MDC.get("requestId"));
+        log.info("Request [{}]: Job retrieved successfully - jobId={}", requestId, jobId);
+        return ApiResponse.success(job, requestId);
     }
 
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication)")
@@ -337,8 +349,11 @@ public class JobController {
                     content = @Content(schema = @Schema(implementation = JobRequestDTO.class))
             )
             @Valid @RequestBody JobRequestDTO dto) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Updating job - jobId={}", requestId, jobId);
         JobResponseDTO updatedJob = jobService.updateJob(jobId, dto);
-        return ApiResponse.success(updatedJob, MDC.get("requestId"));
+        log.info("Request [{}]: Job updated successfully - jobId={}", requestId, jobId);
+        return ApiResponse.success(updatedJob, requestId);
     }
 
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication)")
@@ -391,8 +406,11 @@ public class JobController {
     public ResponseEntity<ApiResponse<Void>> deleteJob(
             @Parameter(description = "ID of the job to delete", example = "1")
             @PathVariable Long jobId) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Deleting job - jobId={}", requestId, jobId);
         jobService.deleteJob(jobId);
-        return ApiResponse.noContent(MDC.get("requestId"));
+        log.info("Request [{}]: Job deleted successfully - jobId={}", requestId, jobId);
+        return ApiResponse.noContent(requestId);
     }
 
     @PreAuthorize("hasRole('RECRUITER')")
@@ -459,8 +477,11 @@ public class JobController {
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> getMyJobs(
             Authentication authentication,
             @PageableDefault(size = 20) Pageable pageable) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         String username = authentication.getName();
+        log.info("Request [{}]: Getting my jobs - username={}, pageable={}", requestId, username, pageable);
         PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(username, pageable);
-        return ApiResponse.success(jobs, MDC.get("requestId"));
+        log.info("Request [{}]: My jobs retrieved successfully - username={}", requestId, username);
+        return ApiResponse.success(jobs, requestId);
     }
 }

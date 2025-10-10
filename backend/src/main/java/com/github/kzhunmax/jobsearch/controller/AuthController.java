@@ -4,11 +4,9 @@ import com.github.kzhunmax.jobsearch.dto.request.UserLoginDTO;
 import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JwtResponse;
 import com.github.kzhunmax.jobsearch.dto.response.UserResponseDTO;
+import com.github.kzhunmax.jobsearch.exception.ApiException;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
-import com.github.kzhunmax.jobsearch.security.JwtService;
-import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.service.AuthService;
-import com.github.kzhunmax.jobsearch.service.CookieService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -20,15 +18,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.Map;
+
+import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -37,12 +33,7 @@ import java.util.Map;
 @Tag(name = "Authentication", description = "Endpoints for user registration, login, and token management")
 public class AuthController {
 
-    private static final String REQUEST_ID_MDC_KEY = "requestId";
-
     private final AuthService authService;
-    private final JwtService jwtService;
-    private final UserDetailsServiceImpl userDetailsService;
-    private final CookieService cookieService;
 
     @PostMapping("/register")
     @Operation(
@@ -130,10 +121,10 @@ public class AuthController {
             @Valid @RequestBody UserRegistrationDTO userRegistrationDTO) {
 
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Processing registration request | requestId={}, username={}", requestId, userRegistrationDTO.username());
+        log.info("Request [{}]: Processing registration request for username={}", requestId, userRegistrationDTO.username());
 
         UserResponseDTO user = authService.registerUser(userRegistrationDTO);
-        log.info("Successfully registered user | requestId={} username={}", requestId, user.username());
+        log.info("Request [{}]: Successfully registered for username={}", requestId, user.username());
         return ApiResponse.created(user, requestId);
     }
 
@@ -224,20 +215,11 @@ public class AuthController {
             HttpServletResponse response
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Login attempt | requestId={}, username={}", requestId, loginDto.usernameOrEmail());
-        UserDetails userDetails = userDetailsService.loadUserByUsername(loginDto.usernameOrEmail());
+        log.info("Request [{}]: Login attempt for username={}", requestId, loginDto.usernameOrEmail());
 
-        String accessToken = jwtService.generateToken(userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
+        JwtResponse jwtResponse = authService.authenticate(loginDto.usernameOrEmail(), response);
 
-        cookieService.addAuthCookiesToResponse(accessToken, refreshToken, jwtService, response);
-
-        Instant issuedAt = Instant.now();
-        Instant expiresAt = issuedAt.plusMillis(jwtService.getJwtExpiration());
-
-        JwtResponse jwtResponse = new JwtResponse(accessToken, refreshToken, "Bearer", issuedAt, expiresAt);
-
-        log.info("Successful login | requestId={}, username={}", requestId, userDetails.getUsername());
+        log.info("Request [{}]: Successful login for username={}", requestId, loginDto.usernameOrEmail());
 
         return ApiResponse.success(jwtResponse, requestId);
     }
@@ -337,29 +319,16 @@ public class AuthController {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
 
         if (refreshToken == null) {
-            return ApiResponse.error(HttpStatus.BAD_REQUEST, "MISSING_TOKEN", "Refresh token is required", MDC.get(REQUEST_ID_MDC_KEY));
+            log.warn("Request [{}]: Missing refresh token", requestId);
+            return ApiResponse.error(HttpStatus.BAD_REQUEST, "MISSING_TOKEN", "Refresh token is required", requestId);
         }
         try {
-            String username = jwtService.extractUsername(refreshToken);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (!jwtService.isTokenValid(refreshToken, userDetails)) {
-                return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", requestId);
-            }
-
-            String newAccessToken = jwtService.generateToken(userDetails);
-            String newRefreshToken = jwtService.generateRefreshToken(userDetails);
-            cookieService.addAuthCookiesToResponse(newAccessToken, newRefreshToken, jwtService, response);
-
-            Instant issuedAt = Instant.now();
-            Instant expiresAt = issuedAt.plusMillis(jwtService.getJwtExpiration());
-
-            JwtResponse jwtResponse = new JwtResponse(newAccessToken, newRefreshToken, "Bearer", issuedAt, expiresAt);
-
+            JwtResponse jwtResponse = authService.refreshTokens(refreshToken, response);
+            log.info("Request [{}]: Tokens refreshed successfully", requestId);
             return ApiResponse.success(jwtResponse, requestId);
-        } catch (Exception e) {
-            log.warn("Refresh failed | requestId={}, cause={}", requestId, e.getMessage());
-            return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH", "Refresh token is invalid or expired", MDC.get(REQUEST_ID_MDC_KEY));
+        } catch (ApiException ex) {
+            log.warn("Request [{}]: Token refresh failed - {}", requestId, ex.getMessage());
+            return ApiResponse.error(ex.getHttpStatus(), ex.getErrorCode(), ex.getMessage(), requestId);
         }
     }
 

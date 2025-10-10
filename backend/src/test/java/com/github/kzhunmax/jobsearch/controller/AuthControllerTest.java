@@ -8,6 +8,7 @@ import com.github.kzhunmax.jobsearch.security.JwtAuthFilter;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.service.AuthService;
+import com.github.kzhunmax.jobsearch.service.CookieService;
 import com.github.kzhunmax.jobsearch.util.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,6 +52,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private UserDetailsServiceImpl userDetailsService;
+
+    @MockitoBean
+    private CookieService cookieService;
 
 
     private UserRegistrationDTO registrationDTO;

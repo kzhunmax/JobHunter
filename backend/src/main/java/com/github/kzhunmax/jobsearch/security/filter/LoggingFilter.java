@@ -11,10 +11,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.UUID;
 
+import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_HEADER;
+import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
+
 @Component
 public class LoggingFilter extends OncePerRequestFilter {
-    private static final String REQUEST_ID_HEADER = "X-Request-ID";
-    private static final String REQUEST_ID_MDC_KEY = "requestId";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {

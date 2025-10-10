@@ -28,7 +28,7 @@ public class JwtService {
     private long refreshExpiration;
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        return buildToken(new HashMap<>(), userDetails);
     }
 
     public String extractUsername(String token) {
@@ -49,7 +49,7 @@ public class JwtService {
     }
 
 
-    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+    public String buildToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())

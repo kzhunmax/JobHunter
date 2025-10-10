@@ -13,6 +13,8 @@ import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
@@ -22,7 +24,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
+
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class JobApplicationService {
     private final JobApplicationRepository jobApplicationRepository;
@@ -33,33 +38,51 @@ public class JobApplicationService {
 
     @Transactional
     public JobApplicationResponseDTO applyToJob(Long jobId, String username, String coverLetter) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Applying to job - jobId={}, username={}", requestId, jobId, username);
         Job job = findJobById(jobId);
         User candidate = findUserByUsername(username);
         validateNoDuplicateApplication(job, candidate);
 
         JobApplication application = createAndSaveApplication(job, candidate, coverLetter);
+        log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
         return jobApplicationMapper.toDto(application);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PagedModel<EntityModel<JobApplicationResponseDTO>> getApplicationsForJob(Long jobId, Pageable pageable) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Fetching applications for jobId={} | pageable={}", requestId, jobId, pageable);
         Job job = findJobById(jobId);
-        Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository.findByJob(job, pageable).map(jobApplicationMapper::toDto);
+
+        Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository
+                .findByJob(job, pageable)
+                .map(jobApplicationMapper::toDto);
+
+        long total = applicationPage.getTotalElements();
+        log.info("Request [{}]: Found {} applications for job - jobId={}", requestId, total, jobId);
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
     @Transactional
     public JobApplicationResponseDTO updateApplicationStatus(Long appId, ApplicationStatus status) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Updating application status - appId={}", requestId, appId);
         JobApplication application = findApplicationById(appId);
         application.setStatus(status);
         JobApplication savedApplication = jobApplicationRepository.save(application);
+        log.info("Request [{}]: Application status updated successfully - appId={}", requestId, appId);
         return jobApplicationMapper.toDto(savedApplication);
     }
 
     @Transactional
     public PagedModel<EntityModel<JobApplicationResponseDTO>> getApplicationsByCandidate(String username, Pageable pageable) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Fetching application by candidate - username={}, pageable={}", requestId, username, pageable);
         User candidate = findUserByUsername(username);
         Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository.findByCandidate(candidate, pageable).map(jobApplicationMapper::toDto);
+        long total = applicationPage.getTotalPages();
+        log.info("Request [{}]: Found {} applications for candidate - username={}", requestId, total, username);
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
@@ -79,9 +102,8 @@ public class JobApplicationService {
     }
 
     private void validateNoDuplicateApplication(Job job, User candidate) {
-        if (jobApplicationRepository.findByJobAndCandidate(job, candidate).isPresent()) {
+        if (jobApplicationRepository.findByJobAndCandidate(job, candidate).isPresent())
             throw new DuplicateApplicationException();
-        }
     }
 
     private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter) {

@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+
+import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @Component
 @Slf4j
@@ -33,16 +36,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws IOException, ServletException {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.debug("Request [{}]: Processing JWT authentication filter", requestId);
         final String jwt = extractJwtFromRequest(request);
 
         if (jwt != null) {
             processJwtAuthentication(request, jwt);
         }
-
+        log.debug("Request [{}]: JWT authentication filter completed", requestId);
         filterChain.doFilter(request, response);
     }
 
     private void processJwtAuthentication(HttpServletRequest request, String jwt) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         try {
             String username = jwtService.extractUsername(jwt);
 
@@ -50,11 +56,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    log.debug("Request [{}]: User authenticated successfully - username={}", requestId, username);
                     authenticateUser(request, userDetails);
                 }
             }
         } catch (Exception e) {
-            log.warn("Invalid JWT token: {}", e.getMessage());
+            log.warn("Request [{}]: JWT processing failed - {}", requestId, e.getMessage());
         }
     }
 

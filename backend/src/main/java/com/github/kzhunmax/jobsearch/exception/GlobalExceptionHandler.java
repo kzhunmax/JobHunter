@@ -8,70 +8,79 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
+
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    private static final String REQUEST_ID_MDC_KEY = "requestId";
-
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.warn("IllegalArgumentException caught: {} | requestId={}", ex.getMessage(), requestId);
+        log.warn("Request [{}]: IllegalArgumentException caught - {}", requestId, ex.getMessage());
         return ApiResponse.error(HttpStatus.BAD_REQUEST, "INVALID_DATA", ex.getMessage(), requestId);
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(AuthenticationException ex) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.warn("AuthenticationException caught: {} | requestId={}", ex.getMessage(), requestId);
-        return ApiResponse.error(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", "Invalid username or password", requestId);
+        log.warn("Request [{}]: AuthenticationException caught - {}", requestId, ex.getMessage());
+        return ApiResponse.error(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", "Authentication is required", requestId);
     }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Object>> handleApiException(ApiException ex) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.warn("ApiException: {} | status {} | code {} | requestId={}",
-                ex.getMessage(), ex.getHttpStatus(), ex.getErrorCode(), requestId);
+        log.warn("Request [{}]: ApiException - {} | status {} | code {}",
+                requestId, ex.getMessage(), ex.getHttpStatus(), ex.getErrorCode());
         return ApiResponse.error(ex.getHttpStatus(), ex.getErrorCode(), ex.getMessage(), requestId);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.warn("MethodsArgumentNotValidException caught: {} | requestId={}", ex.getMessage(), requestId);
+        log.warn("Request [{}]: MethodArgumentNotValidException caught - {}", requestId, ex.getMessage());
         return ApiResponse.error(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", requestId);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
-        String requestId = MDC.get("requestId");
-        log.warn("BadCredentialsException caught: {} | requestId={}", ex.getMessage(), requestId);
-        return ApiResponse.error(
-                HttpStatus.UNAUTHORIZED,
-                "AUTH_FAILED",
-                "Invalid username or password",
-                requestId
-        );
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.warn("Request [{}]: BadCredentialsException caught - {}", requestId, ex.getMessage());
+        return ApiResponse.error(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", "Invalid username or password", requestId);
     }
 
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<ApiResponse<Void>> handleExpiredJwt(ExpiredJwtException ex) {
-        String requestId = MDC.get("requestId");
-        log.warn("ExpiredJwtException caught: {} | requestId={}", ex.getMessage(), requestId);
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.warn("Request [{}]: ExpiredJwtException caught - {}", requestId, ex.getMessage());
         return ApiResponse.error(HttpStatus.UNAUTHORIZED, "TOKEN_EXPIRED", "JWT token has expired", requestId);
     }
 
     @ExceptionHandler({MalformedJwtException.class, SignatureException.class})
     public ResponseEntity<ApiResponse<Void>> handleInvalidJwt(RuntimeException ex) {
-        String requestId = MDC.get("requestId");
-        log.warn("InvalidJwtException caught: {} | requestId={}", ex.getMessage(), requestId);
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.warn("Request [{}]: InvalidJwtException caught - {}", requestId, ex.getMessage());
         return ApiResponse.error(HttpStatus.UNAUTHORIZED, "INVALID_TOKEN", "JWT token is invalid", requestId);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAccessDenied(AccessDeniedException ex) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.warn("Request [{}]: Access denied - {}",  requestId, ex.getMessage());
+        return ApiResponse.error(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "You do not have permission to perform this action", requestId);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Object>> handleUnexpected(Exception ex) {
+        log.error("Request [{}]: Unexpected error occurred - {}", MDC.get(REQUEST_ID_MDC_KEY), ex.getMessage(), ex);
+        return ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Unexpected error", MDC.get(REQUEST_ID_MDC_KEY));
     }
 }
