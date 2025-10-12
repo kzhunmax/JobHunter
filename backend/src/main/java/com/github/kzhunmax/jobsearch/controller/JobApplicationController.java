@@ -69,29 +69,6 @@ public class JobApplicationController {
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid job ID or application data",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": null,
-                                              "errors": [
-                                                {
-                                                  "code": "JOB_NOT_FOUND",
-                                                  "message": "Job with id 3 not found"
-                                                }
-                                              ],
-                                              "timestamp": "2025-09-22T10:15:30Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "Job not found",
                     content = @Content(

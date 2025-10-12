@@ -49,7 +49,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().errors().getFirst().code()).isEqualTo("AUTH_FAILED");
-        assertThat(response.getBody().errors().getFirst().message()).isEqualTo("Invalid username or password");
+        assertThat(response.getBody().errors().getFirst().message()).isEqualTo("Authentication is required");
         assertThat(response.getBody().requestId()).isEqualTo(TEST_REQUEST_ID);
     }
 

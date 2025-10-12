@@ -112,7 +112,7 @@ class JobServiceTest {
 
             assertThatThrownBy(() -> jobService.createJob(jobRequest, NON_EXISTENT_USERNAME))
                     .isInstanceOf(UsernameNotFoundException.class)
-                    .hasMessage(USER_NOT_FOUND_MESSAGE);
+                    .hasMessage(USER_NOT_FOUND_MESSAGE + NON_EXISTENT_USERNAME);
 
             verify(userRepository).findByUsername(NON_EXISTENT_USERNAME);
             verify(jobRepository, never()).save(any(Job.class));
@@ -342,7 +342,7 @@ class JobServiceTest {
 
             assertThatThrownBy(() -> jobService.getJobsByRecruiter(NON_EXISTENT_USERNAME, testPageable))
                     .isInstanceOf(UsernameNotFoundException.class)
-                    .hasMessage(USER_NOT_FOUND_MESSAGE);
+                    .hasMessage(USER_NOT_FOUND_MESSAGE + NON_EXISTENT_USERNAME);
 
             verify(userRepository).findByUsername(NON_EXISTENT_USERNAME);
             verifyNoMoreInteractions(userRepository);

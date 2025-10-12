@@ -21,7 +21,7 @@ public class TestDataFactory {
     public static final Long TEST_ID = 1L;
     public static final Long NON_EXISTENT_ID = 99L;
     public static final String NON_EXISTENT_USERNAME = "unknown";
-    public static final String USER_NOT_FOUND_MESSAGE = "User not found";
+    public static final String USER_NOT_FOUND_MESSAGE = "User not found: ";
     public static final String JOB_NOT_FOUND_MESSAGE = "Job with id %d not found";
 
     public static User createUser(Long id, String username) {
@@ -87,8 +87,8 @@ public class TestDataFactory {
                 .build();
     }
 
-    public static JobApplicationRequestDTO createJobApplicationRequestDTO(Long jobId, String coverLetter) {
-        return new JobApplicationRequestDTO(jobId, coverLetter);
+    public static JobApplicationRequestDTO createJobApplicationRequestDTO(String coverLetter) {
+        return new JobApplicationRequestDTO(coverLetter);
     }
 
     public static JobApplicationResponseDTO createJobApplicationResponseDTO(JobApplication app) {

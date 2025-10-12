@@ -14,6 +14,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -76,6 +77,20 @@ public class GlobalExceptionHandler {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.warn("Request [{}]: Access denied - {}",  requestId, ex.getMessage());
         return ApiResponse.error(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "You do not have permission to perform this action", requestId);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        String paramName = ex.getName();
+        String requiredType = ex.getRequiredType() != null
+                ? ex.getRequiredType().getSimpleName()
+                : "unknown";
+
+        String message = String.format("Invalid value for parameter '%s'. Expected a %s.", paramName, requiredType);
+
+        log.warn("Request [{}]: Type mismatch for parameter '{}' - expected={}, received='{}' ",  requestId, paramName, requiredType, ex.getValue(), ex);
+        return ApiResponse.error(HttpStatus.BAD_REQUEST, "TYPE_MISMATCH", message, requestId);
     }
 
     @ExceptionHandler(Exception.class)

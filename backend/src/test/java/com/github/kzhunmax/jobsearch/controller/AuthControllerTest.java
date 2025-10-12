@@ -22,7 +22,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.Set;
 
+import static com.github.kzhunmax.jobsearch.model.Role.ROLE_CANDIDATE;
 import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -48,16 +50,20 @@ class AuthControllerTest {
     private AuthService authService;
 
     private UserRegistrationDTO registrationDTO;
+    private UserRegistrationDTO invalidRegistrationDTO;
     private UserResponseDTO userResponseDTO;
     private UserLoginDTO loginDTO;
+    private UserLoginDTO invalidLoginDTO;
     private JwtResponse jwtResponse;
 
 
     @BeforeEach
     void setUp() {
         registrationDTO = createUserRegistrationDTO();
+        invalidRegistrationDTO = new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "Password123", "DifferentPassword", Set.of(ROLE_CANDIDATE));
         userResponseDTO = createUserResponseDTO(TEST_ID);
         loginDTO = createUserLoginDTO();
+        invalidLoginDTO = new UserLoginDTO("", "Password123");
         jwtResponse = new JwtResponse(
                 "jwt-token",
                 "refresh-token",
@@ -82,6 +88,37 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 for invalid registration data")
+    void registerUser_withInvalidData_shouldReturnBadRequest() throws Exception {
+        when(authService.registerUser(any(UserRegistrationDTO.class)))
+                .thenThrow(new ApiException("Passwords don't match", HttpStatus.BAD_REQUEST, "INVALID_DATA"));
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRegistrationDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").isNotEmpty())
+                .andExpect(jsonPath("$.errors[0].code").value("INVALID_DATA"))
+                .andExpect(jsonPath("$.errors[0].message").value("Passwords don't match"))
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should return 409 for existing user registration")
+    void registerUser_withExistingUser_shouldReturnConflict() throws Exception {
+        when(authService.registerUser(any(UserRegistrationDTO.class)))
+                .thenThrow(new ApiException("Username " + TEST_USERNAME + " is already taken", HttpStatus.CONFLICT, "USERNAME_TAKEN"));
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registrationDTO)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors[0].code").value("USERNAME_TAKEN"))
+                .andExpect(jsonPath("$.errors[0].message").value("Username " + TEST_USERNAME + " is already taken"))
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
     @DisplayName("Should login user successfully")
     void login_withValidData_shouldLoginSuccessfully() throws Exception {
         when(authService.authenticate(eq(loginDTO.usernameOrEmail()), any())).thenReturn(jwtResponse);
@@ -94,6 +131,32 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.errors").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should return 400 for invalid login data")
+    void login_withInvalidData_shouldReturnBadRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidLoginDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").isNotEmpty())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should return 401 for invalid login credentials")
+    void login_withInvalidCredentials_shouldReturnUnauthorized() throws Exception {
+        when(authService.authenticate(eq(loginDTO.usernameOrEmail()), any()))
+                .thenThrow(new ApiException("Invalid username or password", HttpStatus.UNAUTHORIZED, "AUTH_FAILED"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDTO)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errors[0].code").value("AUTH_FAILED"))
+                .andExpect(jsonPath("$.errors[0].message").value("Invalid username or password"))
+                .andExpect(jsonPath("$.data").isEmpty());
     }
 
     @Test

@@ -99,7 +99,8 @@ class JobControllerTest {
                     .andExpect(jsonPath("$.data.title").value("Java Dev"))
                     .andExpect(jsonPath("$.data.company").value("BigTech"))
                     .andExpect(jsonPath("$.data.location").value("Remote"))
-                    .andExpect(jsonPath("$.data.salary").value(5000.0));
+                    .andExpect(jsonPath("$.data.salary").value(5000.0))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
 
         @Test
@@ -141,7 +142,7 @@ class JobControllerTest {
 
             PagedModel<EntityModel<JobResponseDTO>> pagedJobs = PagedModel.of(
                     jobList.stream().map(EntityModel::of).toList(),
-                    new PagedModel.PageMetadata(2, 0, 2)
+                    new PagedModel.PageMetadata(20, 0, 2)
             );
 
             when(jobService.getAllActiveJobs(any(Pageable.class))).thenReturn(pagedJobs);
@@ -152,15 +153,19 @@ class JobControllerTest {
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.page.size").value(2))
+                    .andExpect(jsonPath("$.data.page.size").value(20))
                     .andExpect(jsonPath("$.data.page.totalPages").value(1))
-                    .andExpect(jsonPath("$.data.page.totalElements").value(2));
+                    .andExpect(jsonPath("$.data.page.totalElements").value(2))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
 
         @Test
         @DisplayName("Returns empty list when no active jobs")
         void withNoActiveJobs_returnsEmptyList() throws Exception {
-            PagedModel<EntityModel<JobResponseDTO>> emptyPagedJobs = PagedModel.empty();
+            PagedModel<EntityModel<JobResponseDTO>> emptyPagedJobs = PagedModel.of(
+                    List.of(),
+                    new PagedModel.PageMetadata(20, 0, 0)
+            );
             when(jobService.getAllActiveJobs(any(Pageable.class))).thenReturn(emptyPagedJobs);
 
             mockMvc.perform(get("/api/jobs")
@@ -168,7 +173,9 @@ class JobControllerTest {
                             .param("size", "20")
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.content").isEmpty());
+                    .andExpect(jsonPath("$.data.content").isEmpty())
+                    .andExpect(jsonPath("$.data.page.totalElements").value(0))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
 
         @Test
@@ -180,7 +187,7 @@ class JobControllerTest {
 
             PagedModel<EntityModel<JobResponseDTO>> pagedJobs = PagedModel.of(
                     jobList.stream().map(EntityModel::of).toList(),
-                    new PagedModel.PageMetadata(1, 0, 3)
+                    new PagedModel.PageMetadata(1, 1, 3)
             );
 
             when(jobService.getAllActiveJobs(any(Pageable.class))).thenReturn(pagedJobs);
@@ -194,8 +201,35 @@ class JobControllerTest {
                     .andExpect(jsonPath("$.data.content").isArray())
                     .andExpect(jsonPath("$.data.content[0].id").value(3))
                     .andExpect(jsonPath("$.data.page.size").value(1))
-                    .andExpect(jsonPath("$.data.page.number").value(0))
-                    .andExpect(jsonPath("$.data.page.totalElements").value(3));
+                    .andExpect(jsonPath("$.data.page.number").value(1))
+                    .andExpect(jsonPath("$.data.page.totalElements").value(3))
+                    .andExpect(jsonPath("$.errors").isEmpty());
+        }
+
+        @Test
+        @WithMockUser(username = TEST_USERNAME, roles = "USER")
+        @DisplayName("Returns paginated list of active jobs for authenticated user")
+        void withActiveJobsAndAuthenticated_returnsPagedJobs() throws Exception {
+            List<JobResponseDTO> jobList = List.of(
+                    createJobResponse(1L),
+                    createJobResponse(2L)
+            );
+
+            PagedModel<EntityModel<JobResponseDTO>> pagedJobs = PagedModel.of(
+                    jobList.stream().map(EntityModel::of).toList(),
+                    new PagedModel.PageMetadata(20, 0, 2)
+            );
+
+            when(jobService.getAllActiveJobs(any(Pageable.class))).thenReturn(pagedJobs);
+
+            mockMvc.perform(get("/api/jobs")
+                            .param("page", "0")
+                            .param("size", "20")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.page.totalElements").value(2))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
     }
 
@@ -215,7 +249,8 @@ class JobControllerTest {
                     .andExpect(jsonPath("$.data.title").value("Java Dev"))
                     .andExpect(jsonPath("$.data.company").value("BigTech"))
                     .andExpect(jsonPath("$.data.location").value("Remote"))
-                    .andExpect(jsonPath("$.data.salary").value(5000.0));
+                    .andExpect(jsonPath("$.data.salary").value(5000.0))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
 
         @Test
@@ -225,7 +260,9 @@ class JobControllerTest {
 
             mockMvc.perform(get("/api/jobs/{jobId}", NON_EXISTENT_ID)
                             .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errors").isNotEmpty())
+                    .andExpect(jsonPath("$.data").isEmpty());
         }
 
         @Test
@@ -235,7 +272,10 @@ class JobControllerTest {
 
             mockMvc.perform(get("/api/jobs/{jobId}", nonNumericId)
                             .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors").isNotEmpty())
+                    .andExpect(jsonPath("$.errors[0].code").value("TYPE_MISMATCH"))
+                    .andExpect(jsonPath("$.data").isEmpty());
         }
     }
 
@@ -261,13 +301,14 @@ class JobControllerTest {
                     .andExpect(jsonPath("$.data.title").value("Updated title"))
                     .andExpect(jsonPath("$.data.company").value("Updated company"))
                     .andExpect(jsonPath("$.data.location").value("Updated location"))
-                    .andExpect(jsonPath("$.data.salary").value(5000.0));
+                    .andExpect(jsonPath("$.data.salary").value(5000.0))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
 
         @Test
         @DisplayName("Returns 403 Forbidden when non-owner tries to update job")
         void withUnauthorizedNonOwner_returnsForbidden() throws Exception {
-            JobRequestDTO updatedRequest = TestDataFactory.updateJobRequest();
+            JobRequestDTO updatedRequest = updateJobRequest();
 
             when(jobSecurityService.isJobOwner(eq(TEST_ID), any(Authentication.class))).thenReturn(false);
 
@@ -289,7 +330,23 @@ class JobControllerTest {
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(invalidJobRequest)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors").isNotEmpty())
+                    .andExpect(jsonPath("$.data").isEmpty());
+        }
+
+        @Test
+        @DisplayName("Returns 400 Bad Request when invalid non-numeric ID")
+        void withNonNumericId_returnsBadRequest() throws Exception {
+            String nonNumericId = "abc123";
+
+            mockMvc.perform(put("/api/jobs/{jobId}", nonNumericId)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors").isNotEmpty())
+                    .andExpect(jsonPath("$.errors[0].code").value("TYPE_MISMATCH"))
+                    .andExpect(jsonPath("$.data").isEmpty());
         }
 
         @Test
@@ -304,7 +361,9 @@ class JobControllerTest {
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updatedJobRequest)))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errors").isNotEmpty())
+                    .andExpect(jsonPath("$.data").isEmpty());
         }
     }
 
@@ -335,6 +394,20 @@ class JobControllerTest {
         }
 
         @Test
+        @DisplayName("Returns 400 Bad Request when invalid non-numeric ID")
+        void withNonNumericId_returnsBadRequest() throws Exception {
+            String nonNumericId = "abc123";
+
+            mockMvc.perform(delete("/api/jobs/{jobId}", nonNumericId)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors").isNotEmpty())
+                    .andExpect(jsonPath("$.errors[0].code").value("TYPE_MISMATCH"))
+                    .andExpect(jsonPath("$.data").isEmpty());
+        }
+
+        @Test
         @DisplayName("Returns 404 Not Found when job does not exist")
         void withNonExistingJob_returnsNotFound() throws Exception {
             when(jobSecurityService.isJobOwner(eq(NON_EXISTENT_ID), any(Authentication.class))).thenReturn(true);
@@ -343,7 +416,9 @@ class JobControllerTest {
             mockMvc.perform(delete("/api/jobs/{jobId}", NON_EXISTENT_ID)
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errors").isNotEmpty())
+                    .andExpect(jsonPath("$.data").isEmpty());
         }
     }
 
@@ -361,7 +436,7 @@ class JobControllerTest {
 
             PagedModel<EntityModel<JobResponseDTO>> pagedJobs = PagedModel.of(
                     jobList.stream().map(EntityModel::of).toList(),
-                    new PagedModel.PageMetadata(2, 0, 2)
+                    new PagedModel.PageMetadata(20, 0, 2)
             );
 
             when(jobService.getJobsByRecruiter(eq(TEST_USERNAME), any(Pageable.class))).thenReturn(pagedJobs);
@@ -372,24 +447,30 @@ class JobControllerTest {
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.page.size").value(2))
+                    .andExpect(jsonPath("$.data.page.size").value(20))
                     .andExpect(jsonPath("$.data.page.totalElements").value(2))
-                    .andExpect(jsonPath("$.data.page.totalPages").value(1));
+                    .andExpect(jsonPath("$.data.page.totalPages").value(1))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
 
         @Test
         @WithMockUser(username = TEST_USERNAME, roles = "RECRUITER")
         @DisplayName("Returns empty list when no active jobs")
         void withNoActiveJobs_returnsEmptyList() throws Exception {
-            PagedModel<EntityModel<JobResponseDTO>> emptyPagedJobs = PagedModel.empty();
+            PagedModel<EntityModel<JobResponseDTO>> emptyPagedJobs = PagedModel.of(
+                    List.of(),
+                    new PagedModel.PageMetadata(20, 0, 0)
+            );
             when(jobService.getJobsByRecruiter(eq(TEST_USERNAME), any(Pageable.class))).thenReturn(emptyPagedJobs);
 
             mockMvc.perform(get("/api/jobs/my-jobs")
                             .param("page", "0")
-                            .param("size", "10")
+                            .param("size", "20")
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.content").isEmpty());
+                    .andExpect(jsonPath("$.data.content").isEmpty())
+                    .andExpect(jsonPath("$.data.page.totalElements").value(0))
+                    .andExpect(jsonPath("$.errors").isEmpty());
         }
 
         @Test
