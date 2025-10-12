@@ -8,9 +8,8 @@ import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
@@ -21,16 +20,18 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate;
 
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
+    public OAuth2User loadUser(OAuth2UserRequest request) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Loading OAuth2 user - registrationId={}", requestId, request.getClientRegistration().getRegistrationId());
-        OAuth2User oAuth2User = super.loadUser(request);
+
+        OAuth2User oAuth2User = delegate.loadUser(request);
 
         String email = oAuth2User.getAttribute("email");
         log.debug("Request [{}]: OAuth2 user loaded - email={}", requestId, email);

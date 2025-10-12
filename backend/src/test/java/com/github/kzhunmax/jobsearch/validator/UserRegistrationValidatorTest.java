@@ -10,14 +10,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.github.kzhunmax.jobsearch.util.TestDataFactory.TEST_USERNAME;
-import static com.github.kzhunmax.jobsearch.util.TestDataFactory.createUserRegistrationDTO;
-import static org.assertj.core.api.Assertions.*;
+import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +49,7 @@ public class UserRegistrationValidatorTest {
     @Test
     @DisplayName("Should throw IllegalArgumentException when passwords do not match")
     void validateRegistration_whenPasswordsMismatch_shouldThrowIllegalArgumentException() {
-        UserRegistrationDTO dto = new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "Password123", "Mismatch", Set.of());
+        UserRegistrationDTO dto = new UserRegistrationDTO(TEST_USERNAME, TEST_EMAIL, "Password123", "Mismatch", Set.of());
 
         assertThatThrownBy(() -> validator.validateRegistration(dto))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -59,7 +58,7 @@ public class UserRegistrationValidatorTest {
     @Test
     @DisplayName("Should throw IllegalArgumentException when password format is invalid")
     void validateRegistration_whenInvalidPasswordFormat_shouldThrowIllegalArgumentException() {
-        UserRegistrationDTO dto = new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "weak", "weak", Set.of());
+        UserRegistrationDTO dto = new UserRegistrationDTO(TEST_USERNAME, TEST_EMAIL, "weak", "weak", Set.of());
 
         assertThatThrownBy(() -> validator.validateRegistration(dto))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -82,7 +81,7 @@ public class UserRegistrationValidatorTest {
     void validateRegistration_whenEmailTaken_shouldThrowEmailExistsException() {
         UserRegistrationDTO dto = createUserRegistrationDTO();
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
-        when(userRepository.existsByEmail(TEST_USERNAME + "@example.com")).thenReturn(true);
+        when(userRepository.existsByEmail(TEST_EMAIL)).thenReturn(true);
 
         assertThatThrownBy(() -> validator.validateRegistration(dto))
                 .isInstanceOf(EmailExistsException.class)
@@ -92,7 +91,7 @@ public class UserRegistrationValidatorTest {
     @Test
     @DisplayName("Should throw IllegalArgumentException when username is empty")
     void validateRegistration_whenUsernameEmpty_shouldThrowIllegalArgumentException() {
-        UserRegistrationDTO dto = new UserRegistrationDTO(" ", TEST_USERNAME + "@example.com", "Password123", "Password123", Set.of());
+        UserRegistrationDTO dto = new UserRegistrationDTO(" ", TEST_EMAIL, "Password123", "Password123", Set.of());
 
         assertThatThrownBy(() -> validator.validateRegistration(dto))
                 .isInstanceOf(IllegalArgumentException.class)

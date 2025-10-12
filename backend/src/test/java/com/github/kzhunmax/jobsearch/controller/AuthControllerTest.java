@@ -60,8 +60,8 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         registrationDTO = createUserRegistrationDTO();
-        invalidRegistrationDTO = new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "Password123", "DifferentPassword", Set.of(ROLE_CANDIDATE));
-        userResponseDTO = createUserResponseDTO(TEST_ID);
+        invalidRegistrationDTO = new UserRegistrationDTO(TEST_USERNAME, TEST_EMAIL, "Password123", "DifferentPassword", Set.of(ROLE_CANDIDATE));
+        userResponseDTO = createUserResponseDTO();
         loginDTO = createUserLoginDTO();
         invalidLoginDTO = new UserLoginDTO("", "Password123");
         jwtResponse = new JwtResponse(
@@ -83,7 +83,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(registrationDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.username").value(TEST_USERNAME))
-                .andExpect(jsonPath("$.data.email").value(TEST_USERNAME + "@example.com"))
+                .andExpect(jsonPath("$.data.email").value(TEST_EMAIL))
                 .andExpect(jsonPath("$.errors").isEmpty());
     }
 

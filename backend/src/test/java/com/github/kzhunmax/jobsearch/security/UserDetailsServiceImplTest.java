@@ -50,9 +50,9 @@ public class UserDetailsServiceImplTest {
 
     @Test
     void loadByUsername_userByEmailExists_returnsUserDetails() {
-        when(userRepository.findByUsernameOrEmail(TEST_USERNAME + "@example.com", TEST_USERNAME + "@example.com")).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsernameOrEmail(TEST_EMAIL, TEST_EMAIL)).thenReturn(Optional.of(testUser));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(TEST_USERNAME + "@example.com");
+        UserDetails userDetails = userDetailsService.loadUserByUsername(TEST_EMAIL);
 
         assertThat(userDetails).isNotNull();
         assertThat(userDetails.getUsername()).isEqualTo(TEST_USERNAME);

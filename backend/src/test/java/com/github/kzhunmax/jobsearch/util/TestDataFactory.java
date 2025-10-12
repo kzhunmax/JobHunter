@@ -21,8 +21,13 @@ public class TestDataFactory {
     public static final Long TEST_ID = 1L;
     public static final Long NON_EXISTENT_ID = 99L;
     public static final String NON_EXISTENT_USERNAME = "unknown";
+    public static final String TEST_EMAIL = TEST_USERNAME + "@example.com";
     public static final String USER_NOT_FOUND_MESSAGE = "User not found: ";
     public static final String JOB_NOT_FOUND_MESSAGE = "Job with id %d not found";
+    public static final String REQUEST_ID = "test-request-id";
+    public static final String VALID_JWT = "valid-jwt-token";
+    public static final String ACCESS_TOKEN = "access-token";
+    public static final String REFRESH_TOKEN = "refresh-token";
 
     public static User createUser(Long id, String username) {
         User user = new User();
@@ -30,6 +35,7 @@ public class TestDataFactory {
         user.setUsername(username);
         user.setEmail(username + "@example.com");
         user.setPassword("Password123");
+        user.setRoles(Set.of(Role.ROLE_CANDIDATE));
         return user;
     }
 
@@ -128,15 +134,15 @@ public class TestDataFactory {
     }
 
     public static UserRegistrationDTO createUserRegistrationDTO() {
-        return new UserRegistrationDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", "Password123", "Password123", Set.of(Role.ROLE_CANDIDATE));
+        return new UserRegistrationDTO(TEST_USERNAME, TEST_EMAIL, "Password123", "Password123", Set.of(Role.ROLE_CANDIDATE));
     }
 
     public static UserLoginDTO createUserLoginDTO() {
         return new UserLoginDTO(TEST_USERNAME, "Password123");
     }
 
-    public static UserResponseDTO createUserResponseDTO(Long id) {
-        return new UserResponseDTO(TEST_USERNAME, TEST_USERNAME + "@example.com", Set.of(Role.ROLE_CANDIDATE));
+    public static UserResponseDTO createUserResponseDTO() {
+        return new UserResponseDTO(TEST_USERNAME, TEST_EMAIL, Set.of(Role.ROLE_CANDIDATE));
     }
 
     public static UserDetails createUserDetails(String username) {
