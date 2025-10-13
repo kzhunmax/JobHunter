@@ -12,7 +12,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,7 +19,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.IOException;
 
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.mockito.Mockito.*;
 
@@ -45,21 +43,16 @@ public class JwtAuthFilterTest {
     @InjectMocks
     private JwtAuthFilter jwtAuthFilter;
 
-    private MockedStatic<MDC> mdcMockStatic;
     private MockedStatic<SecurityContextHolder> securityContextHolderMockStatic;
 
     @BeforeEach
     void setUp() {
-        mdcMockStatic = mockStatic(MDC.class);
         securityContextHolderMockStatic = mockStatic(SecurityContextHolder.class);
-
-        mdcMockStatic.when(() -> MDC.get(REQUEST_ID_MDC_KEY)).thenReturn(REQUEST_ID);
         securityContextHolderMockStatic.when(SecurityContextHolder::getContext).thenReturn(securityContext);
     }
 
     @AfterEach
     void tearDown() {
-        mdcMockStatic.close();
         securityContextHolderMockStatic.close();
     }
 

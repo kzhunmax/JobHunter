@@ -24,10 +24,11 @@ public class TestDataFactory {
     public static final String TEST_EMAIL = TEST_USERNAME + "@example.com";
     public static final String USER_NOT_FOUND_MESSAGE = "User not found: ";
     public static final String JOB_NOT_FOUND_MESSAGE = "Job with id %d not found";
-    public static final String REQUEST_ID = "test-request-id";
-    public static final String VALID_JWT = "valid-jwt-token";
+    public static final String VALID_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTYyNTA0ODAwMCwiZXhwIjoxNjI1MDQ4MTAwfQ.signature";
     public static final String ACCESS_TOKEN = "access-token";
     public static final String REFRESH_TOKEN = "refresh-token";
+    public static final Long JWT_EXPIRATION = 3600000L;
+    public static final Long REFRESH_EXPIRATION = 7200000L;
 
     public static User createUser(Long id, String username) {
         User user = new User();

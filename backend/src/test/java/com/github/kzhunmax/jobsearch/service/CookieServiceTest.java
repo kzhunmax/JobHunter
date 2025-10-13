@@ -10,6 +10,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseCookie;
 
+import static com.github.kzhunmax.jobsearch.util.TestDataFactory.JWT_EXPIRATION;
+import static com.github.kzhunmax.jobsearch.util.TestDataFactory.REFRESH_EXPIRATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -28,8 +30,8 @@ public class CookieServiceTest {
 
     @Test
     void createAuthCookies_shouldCreateSuccessfully() {
-        when(jwtService.getJwtExpiration()).thenReturn(3600000L);
-        when(jwtService.getRefreshExpiration()).thenReturn(7200000L);
+        when(jwtService.getJwtExpiration()).thenReturn(JWT_EXPIRATION);
+        when(jwtService.getRefreshExpiration()).thenReturn(REFRESH_EXPIRATION);
 
         ResponseCookie[] cookies = cookieService.createAuthCookies("access", "refresh", jwtService);
 
@@ -49,8 +51,8 @@ public class CookieServiceTest {
 
     @Test
     void addAuthCookiesToResponse_shouldAddSuccessfully() {
-        when(jwtService.getJwtExpiration()).thenReturn(3600000L);
-        when(jwtService.getRefreshExpiration()).thenReturn(7200000L);
+        when(jwtService.getJwtExpiration()).thenReturn(JWT_EXPIRATION);
+        when(jwtService.getRefreshExpiration()).thenReturn(REFRESH_EXPIRATION);
 
         cookieService.addAuthCookiesToResponse("access", "refresh", jwtService, response);
         verify(response, times(2)).addHeader(eq("Set-Cookie"), anyString());
