@@ -46,6 +46,9 @@ class JobServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private JobSearchService jobSearchService;
+
+    @Mock
     private PagedResourcesAssembler<JobResponseDTO> pagedAssembler;
 
     @InjectMocks

@@ -6,6 +6,9 @@ spring:
   datasource:
     driver-class-name: org.postgresql.Driver
 
+  elasticsearch:
+    uris=:
+
 jwt:
   secret-key: test-key
   expiration: 900000

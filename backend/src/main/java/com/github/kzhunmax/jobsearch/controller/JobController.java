@@ -26,8 +26,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
@@ -491,15 +489,31 @@ public class JobController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<JobDocument>> searchJobs(
-            @RequestParam String query,
-            @RequestParam (required = false) String location,
-            @RequestParam (required = false) String company
+    @Operation(
+            summary = "Search jobs by query",
+            description = "Search active jobs by keyword in title/description, optionally filtered by location/company"
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Search results retrieved",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = JobDocument.class)
+                    )
+            )
+    })
+    public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobDocument>>>> searchJobs(
+            @Parameter(description = "Search keyword", example = "Java") @RequestParam String query,
+            @Parameter(description = "Optional location filter", example = "Remote") @RequestParam (required = false) String location,
+            @Parameter(description = "Optional company filter", example = "TechCorp") @RequestParam (required = false) String company,
+            @PageableDefault(size = 20) Pageable pageable
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Searching jobs - query={}, location={}, company={}", requestId, query, location, company);
-        List<JobDocument> results = jobSearchService.searchJobs(query, location, company);
-        log.info("Request [{}]: Search completed - {} results", requestId, results.size());
-        return ResponseEntity.ok(results);
+        PagedModel<EntityModel<JobDocument>> results = jobSearchService.searchJobs(query, location, company, pageable);
+        log.info("Request [{}]: Search completed - {} results", requestId, results.getMetadata().getTotalElements());
+        return ApiResponse.success(results, requestId);
     }
+
 }

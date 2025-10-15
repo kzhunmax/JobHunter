@@ -2,14 +2,18 @@ package com.github.kzhunmax.jobsearch.service;
 
 import com.github.kzhunmax.jobsearch.model.es.JobDocument;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Query;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,8 +21,9 @@ import java.util.stream.Collectors;
 public class JobSearchService {
 
     private final ElasticsearchOperations elasticsearchOperations;
+    private final PagedResourcesAssembler<JobDocument> pagedResourcesAssembler;
 
-    public List<JobDocument> searchJobs(String query, String location, String company) {
+    public PagedModel<EntityModel<JobDocument>> searchJobs(String query, String location, String company, Pageable pageable) {
         var nativeQueryBuilder = NativeQuery.builder()
                 .withQuery(q -> q
                         .bool(b -> {
@@ -52,6 +57,11 @@ public class JobSearchService {
 
         return searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
-                .collect(Collectors.toList());
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> pagedResourcesAssembler.toModel(
+                                new PageImpl<>(list, pageable, searchHits.getTotalHits())
+                        )
+                ));
     }
 }

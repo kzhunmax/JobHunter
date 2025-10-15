@@ -27,7 +27,12 @@ spring:
     database: 0
 
   elasticsearch:
-    uris: http://elasticsearch:9200
+    uris: ${SPRING_ELASTICSEARCH_URIS}
+
+  data:
+    elasticsearch:
+      repositories:
+        enable: true
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}

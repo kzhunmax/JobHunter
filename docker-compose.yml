@@ -22,6 +22,8 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
 
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+
     container_name: job-search-backend
     ports:
       - "8080:8080"

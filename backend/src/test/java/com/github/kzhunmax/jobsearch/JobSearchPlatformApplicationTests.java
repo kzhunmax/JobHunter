@@ -15,5 +15,6 @@ class JobSearchPlatformApplicationTests extends AbstractIntegrationTest {
     void contextLoads() {
         assertThat(POSTGRES.isRunning()).isTrue();
         assertThat(REDIS.isRunning()).isTrue();
+        assertThat(ELASTICSEARCH.isRunning()).isTrue();
     }
 }

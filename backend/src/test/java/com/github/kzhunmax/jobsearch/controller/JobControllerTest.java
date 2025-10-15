@@ -7,6 +7,7 @@ import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
 import com.github.kzhunmax.jobsearch.security.JobSecurityService;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
+import com.github.kzhunmax.jobsearch.service.JobSearchService;
 import com.github.kzhunmax.jobsearch.service.JobService;
 import com.github.kzhunmax.jobsearch.util.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,9 @@ class JobControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private JobSearchService jobSearchService;
 
     @TestConfiguration
     static class TestConfig {
