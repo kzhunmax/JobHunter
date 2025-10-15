@@ -32,6 +32,7 @@ public class JobService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
     private final PagedResourcesAssembler<JobResponseDTO> pagedAssembler;
+    private final JobSyncService jobSyncService;
 
     @Transactional
     public JobResponseDTO createJob(JobRequestDTO dto, String username) {
@@ -41,6 +42,7 @@ public class JobService {
         Job job = buildJobFromDTO(dto, user);
         Job savedJob = jobRepository.save(job);
         log.info("Request [{}]: Job created successfully - jobId={}", requestId, savedJob.getId());
+        jobSyncService.syncJob(savedJob);
         return toJobResponseDTO(savedJob);
     }
 
@@ -102,6 +104,7 @@ public class JobService {
 
         Job updatedJob = jobRepository.save(job);
         log.info("Request [{}]: Job updated successfully - jobId={}", requestId, jobId);
+        jobSyncService.syncJob(updatedJob);
         return toJobResponseDTO(updatedJob);
     }
 
@@ -116,6 +119,7 @@ public class JobService {
         job.setActive(false);
         jobRepository.save(job);
         log.info("Request [{}]: Job deleted successfully - jobId={}", requestId, jobId);
+        jobSyncService.deleteJob(job.getId());
     }
 
     @Transactional(readOnly = true)

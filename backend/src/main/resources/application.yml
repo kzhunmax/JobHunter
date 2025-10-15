@@ -26,6 +26,9 @@ spring:
     password:
     database: 0
 
+  elasticsearch:
+    uris: http://elasticsearch:9200
+
 jwt:
   secret-key: ${JWT_SECRET_KEY}
   expiration: ${JWT_EXPIRATION}

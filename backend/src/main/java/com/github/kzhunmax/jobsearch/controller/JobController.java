@@ -2,7 +2,9 @@ package com.github.kzhunmax.jobsearch.controller;
 
 import com.github.kzhunmax.jobsearch.dto.request.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobResponseDTO;
+import com.github.kzhunmax.jobsearch.model.es.JobDocument;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
+import com.github.kzhunmax.jobsearch.service.JobSearchService;
 import com.github.kzhunmax.jobsearch.service.JobService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,6 +26,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
@@ -33,6 +37,7 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 @Tag(name = "Jobs", description = "Job posting management and browsing")
 public class JobController {
     private final JobService jobService;
+    private final JobSearchService jobSearchService;
 
     @PreAuthorize("hasRole('RECRUITER')")
     @PostMapping
@@ -483,5 +488,18 @@ public class JobController {
         PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(username, pageable);
         log.info("Request [{}]: My jobs retrieved successfully - username={}", requestId, username);
         return ApiResponse.success(jobs, requestId);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<JobDocument>> searchJobs(
+            @RequestParam String query,
+            @RequestParam (required = false) String location,
+            @RequestParam (required = false) String company
+    ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Searching jobs - query={}, location={}, company={}", requestId, query, location, company);
+        List<JobDocument> results = jobSearchService.searchJobs(query, location, company);
+        log.info("Request [{}]: Search completed - {} results", requestId, results.size());
+        return ResponseEntity.ok(results);
     }
 }
