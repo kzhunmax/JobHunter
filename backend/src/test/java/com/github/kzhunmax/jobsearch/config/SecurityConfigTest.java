@@ -1,6 +1,6 @@
 package com.github.kzhunmax.jobsearch.config;
 
-import com.github.kzhunmax.jobsearch.util.AbstractPostgresTest;
+import com.github.kzhunmax.jobsearch.util.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("SecurityConfig Integration Tests")
-class SecurityConfigTest extends AbstractPostgresTest {
+class SecurityConfigTest extends AbstractIntegrationTest {
 
     private MockMvc mockMvc;
 

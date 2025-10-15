@@ -15,6 +15,9 @@ import com.github.kzhunmax.jobsearch.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
@@ -36,6 +39,10 @@ public class JobApplicationService {
     private final JobApplicationMapper jobApplicationMapper;
     private final PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler;
 
+    @Caching(evict = {
+            @CacheEvict(value = "applicationByJob", allEntries = true),
+            @CacheEvict(value = "applicationByCandidate", allEntries = true)
+    })
     @Transactional
     public JobApplicationResponseDTO applyToJob(Long jobId, String username, String coverLetter) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
@@ -49,6 +56,7 @@ public class JobApplicationService {
         return jobApplicationMapper.toDto(application);
     }
 
+    @Cacheable(value = "applicationByJob", key = "{#jobId, #pageable}")
     @Transactional(readOnly = true)
     public PagedModel<EntityModel<JobApplicationResponseDTO>> getApplicationsForJob(Long jobId, Pageable pageable) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
@@ -64,6 +72,10 @@ public class JobApplicationService {
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "applicationByJob", allEntries = true),
+            @CacheEvict(value = "applicationByCandidate", allEntries = true)
+    })
     @Transactional
     public JobApplicationResponseDTO updateApplicationStatus(Long appId, ApplicationStatus status) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
@@ -75,7 +87,8 @@ public class JobApplicationService {
         return jobApplicationMapper.toDto(savedApplication);
     }
 
-    @Transactional
+    @Cacheable(value = "applicationByCandidate", key = "{#username, #pageable}")
+    @Transactional(readOnly = true)
     public PagedModel<EntityModel<JobApplicationResponseDTO>> getApplicationsByCandidate(String username, Pageable pageable) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Fetching application by candidate - username={}, pageable={}", requestId, username, pageable);

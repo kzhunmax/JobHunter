@@ -10,6 +10,9 @@ import com.github.kzhunmax.jobsearch.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -72,7 +75,8 @@ public class JobService {
         );
     }
 
-    @Transactional
+    @Cacheable(value = "jobs", key = "#jobId")
+    @Transactional(readOnly = true)
     public JobResponseDTO getJobById(Long jobId) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Fetching job - jobId={}", requestId, jobId);
@@ -82,6 +86,7 @@ public class JobService {
         return toJobResponseDTO(job);
     }
 
+    @CachePut(value = "jobs", key = "#jobId")
     @Transactional
     public JobResponseDTO updateJob(Long jobId, JobRequestDTO dto) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
@@ -100,6 +105,7 @@ public class JobService {
         return toJobResponseDTO(updatedJob);
     }
 
+    @CacheEvict(value = "jobs", key = "#jobId")
     @Transactional
     public void deleteJob(Long jobId) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);

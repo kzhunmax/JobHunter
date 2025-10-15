@@ -3,7 +3,7 @@ package com.github.kzhunmax.jobsearch.repository;
 import com.github.kzhunmax.jobsearch.model.Job;
 import com.github.kzhunmax.jobsearch.model.JobApplication;
 import com.github.kzhunmax.jobsearch.model.User;
-import com.github.kzhunmax.jobsearch.util.AbstractPostgresTest;
+import com.github.kzhunmax.jobsearch.util.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @DisplayName("JobApplicationRepository Tests")
-public class JobApplicationRepositoryTest extends AbstractPostgresTest {
+public class JobApplicationRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
