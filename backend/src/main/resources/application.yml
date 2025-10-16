@@ -34,6 +34,21 @@ spring:
       repositories:
         enable: true
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_KAFKA_EMAIL}
+    password: ${SPRING_KAFKA_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
 jwt:
   secret-key: ${JWT_SECRET_KEY}
   expiration: ${JWT_EXPIRATION}

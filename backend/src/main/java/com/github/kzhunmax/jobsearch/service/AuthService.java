@@ -3,10 +3,13 @@ package com.github.kzhunmax.jobsearch.service;
 import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JwtResponse;
 import com.github.kzhunmax.jobsearch.dto.response.UserResponseDTO;
+import com.github.kzhunmax.jobsearch.event.producer.UserEventProducer;
 import com.github.kzhunmax.jobsearch.exception.ApiException;
 import com.github.kzhunmax.jobsearch.mapper.UserMapper;
 import com.github.kzhunmax.jobsearch.model.Role;
 import com.github.kzhunmax.jobsearch.model.User;
+import com.github.kzhunmax.jobsearch.model.event.EventType;
+import com.github.kzhunmax.jobsearch.model.event.UserEvent;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
@@ -37,6 +40,7 @@ public class AuthService {
     private final CookieService cookieService;
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
+    private final UserEventProducer userEventProducer;
 
 
     @Transactional
@@ -47,6 +51,8 @@ public class AuthService {
         Set<Role> roles = resolveRoles(dto.roles());
         User user = userMapper.toEntity(dto, roles);
         User savedUser = userRepository.save(user);
+        UserEvent event = new UserEvent(dto.username(), dto.email(), EventType.REGISTERED);
+        userEventProducer.sendUserEvent(event);
         log.info("Request [{}]: User registered successfully - username={}", requestId, dto.username());
         return userMapper.toDto(savedUser);
     }
@@ -83,8 +89,6 @@ public class AuthService {
 
         return new JwtResponse(accessToken, refreshToken, "Bearer", issueAt, expiresAt);
     }
-
-
 
     private Set<Role> resolveRoles(Set<Role> requestedRoles) {
         return new HashSet<>(requestedRoles != null ? requestedRoles : Set.of(Role.ROLE_CANDIDATE));
