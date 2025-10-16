@@ -4,6 +4,7 @@ import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JwtResponse;
 import com.github.kzhunmax.jobsearch.dto.response.UserResponseDTO;
 import com.github.kzhunmax.jobsearch.exception.ApiException;
+import com.github.kzhunmax.jobsearch.mapper.UserMapper;
 import com.github.kzhunmax.jobsearch.model.Role;
 import com.github.kzhunmax.jobsearch.model.User;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +33,7 @@ public class AuthService {
 
     private final UserRegistrationValidator userRegistrationValidator;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
     private final CookieService cookieService;
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
@@ -45,10 +45,10 @@ public class AuthService {
         log.info("Request [{}]: Registering user - username={}", requestId, dto.username());
         userRegistrationValidator.validateRegistration(dto);
         Set<Role> roles = resolveRoles(dto.roles());
-        User user = buildUserEntity(dto, roles);
+        User user = userMapper.toEntity(dto, roles);
         User savedUser = userRepository.save(user);
         log.info("Request [{}]: User registered successfully - username={}", requestId, dto.username());
-        return buildUserResponse(savedUser);
+        return userMapper.toDto(savedUser);
     }
 
     public JwtResponse authenticate(String usernameOrEmail, HttpServletResponse response) {
@@ -84,22 +84,7 @@ public class AuthService {
         return new JwtResponse(accessToken, refreshToken, "Bearer", issueAt, expiresAt);
     }
 
-    private User buildUserEntity(UserRegistrationDTO dto, Set<Role> roles) {
-        return User.builder()
-                .username(dto.username().trim())
-                .email(dto.email().trim())
-                .password(passwordEncoder.encode(dto.password()))
-                .roles(roles)
-                .build();
-    }
 
-    private UserResponseDTO buildUserResponse(User user) {
-        return new UserResponseDTO(
-                user.getUsername(),
-                user.getEmail(),
-                user.getRoles()
-        );
-    }
 
     private Set<Role> resolveRoles(Set<Role> requestedRoles) {
         return new HashSet<>(requestedRoles != null ? requestedRoles : Set.of(Role.ROLE_CANDIDATE));

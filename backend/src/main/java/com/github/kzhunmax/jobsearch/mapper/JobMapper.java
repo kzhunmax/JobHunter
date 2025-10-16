@@ -41,10 +41,10 @@ public class JobMapper {
     public void updateEntityFromDto(JobRequestDTO dto, Job job) {
         if (dto == null || job == null) return;
 
-        job.setTitle(dto.title());
-        job.setDescription(dto.description());
-        job.setCompany(dto.company());
-        job.setLocation(dto.location());
-        job.setSalary(dto.salary());
+        if (dto.title() != null) job.setTitle(dto.title());
+        if (dto.description() != null) job.setDescription(dto.description());
+        if (dto.company() != null) job.setCompany(dto.company());
+        if (dto.location() != null) job.setLocation(dto.location());
+        if (dto.salary() != null) job.setSalary(dto.salary());
     }
 }
