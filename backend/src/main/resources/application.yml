@@ -20,19 +20,18 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: email,profile
 
-  redis:
-    host: redis
-    port: 6379
-    password:
-    database: 0
-
   elasticsearch:
     uris: ${SPRING_ELASTICSEARCH_URIS}
 
   data:
+    redis:
+      host: redis
+      port: 6379
+      password:
+      database: 0
     elasticsearch:
       repositories:
-        enable: true
+        enabled: true
 
   mail:
     host: smtp.gmail.com

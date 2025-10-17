@@ -77,8 +77,6 @@ class JobApplicationControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private User testUser;
-    private Job testJob;
     private JobApplication jobApplication;
     private JobApplicationResponseDTO jobApplicationResponseDTO;
     private JobApplicationRequestDTO jobApplicationRequestDTO;
@@ -88,8 +86,8 @@ class JobApplicationControllerTest {
 
     @BeforeEach
     void setUp() {
-        testUser = createUser(TEST_ID, TEST_USERNAME);
-        testJob = createJob(TEST_ID, testUser, true);
+        User testUser = createUser(TEST_ID, TEST_USERNAME);
+        Job testJob = createJob(TEST_ID, testUser, true);
         jobApplication = createJobApplication(TEST_ID, testUser, testJob);
         jobApplicationResponseDTO = createJobApplicationResponseDTO(jobApplication);
         jobApplicationRequestDTO = createJobApplicationRequestDTO("Cover Letter");

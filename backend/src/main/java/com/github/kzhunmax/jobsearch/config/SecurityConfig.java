@@ -39,11 +39,6 @@ public class SecurityConfig {
     private final JwtService jwtService;
 
     @Bean
-    public OAuth2UserService<OAuth2UserRequest, OAuth2User> defaultOAuth2UserService() {
-        return new DefaultOAuth2UserService();
-    }
-
-    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }

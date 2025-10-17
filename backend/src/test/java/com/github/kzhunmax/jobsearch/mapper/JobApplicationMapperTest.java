@@ -15,14 +15,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class JobApplicationMapperTest {
 
     private JobApplicationMapper mapper;
-    private User user;
-    private Job job;
     private JobApplication application;
 
     @BeforeEach
     void setUp() {
-        user = createUser(TEST_ID, TEST_USERNAME);
-        job = createJob(TEST_ID, user, true);
+        User user = createUser(TEST_ID, TEST_USERNAME);
+        Job job = createJob(TEST_ID, user, true);
         application = createJobApplication(user, job);
         mapper = new JobApplicationMapper();
     }

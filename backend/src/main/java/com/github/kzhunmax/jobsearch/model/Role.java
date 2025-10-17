@@ -1,7 +1,6 @@
 package com.github.kzhunmax.jobsearch.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
@@ -24,6 +23,6 @@ public enum Role {
             description = "Admin - user, that has full control of platform",
             example = "ROLE_ADMIN"
     )
-    ROLE_ADMIN;
+    ROLE_ADMIN
 
 }

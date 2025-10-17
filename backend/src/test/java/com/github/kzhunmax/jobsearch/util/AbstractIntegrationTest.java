@@ -11,7 +11,7 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class AbstractIntegrationTest {
 
     @ServiceConnection
-    public static RedisContainer REDIS = new RedisContainer(DockerImageName.parse("redis:8.2.2-alpine"))
+    public static final RedisContainer REDIS = new RedisContainer(DockerImageName.parse("redis:8.2.2-alpine"))
             .withExposedPorts(6379);
 
     @ServiceConnection

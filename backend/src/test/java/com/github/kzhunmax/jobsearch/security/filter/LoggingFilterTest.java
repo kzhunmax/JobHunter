@@ -17,8 +17,6 @@ import java.util.UUID;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_HEADER;
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
