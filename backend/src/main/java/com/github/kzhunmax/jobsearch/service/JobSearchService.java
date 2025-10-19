@@ -21,9 +21,8 @@ import java.util.stream.Collectors;
 public class JobSearchService {
 
     private final ElasticsearchOperations elasticsearchOperations;
-    private final PagedResourcesAssembler<JobDocument> pagedResourcesAssembler;
 
-    public PagedModel<EntityModel<JobDocument>> searchJobs(String query, String location, String company, Pageable pageable) {
+    public PagedModel<EntityModel<JobDocument>> searchJobs(String query, String location, String company, Pageable pageable, PagedResourcesAssembler<JobDocument> pagedAssembler) {
         var nativeQueryBuilder = NativeQuery.builder()
                 .withQuery(q -> q
                         .bool(b -> {
@@ -59,7 +58,7 @@ public class JobSearchService {
                 .map(SearchHit::getContent)
                 .collect(Collectors.collectingAndThen(
                         Collectors.toList(),
-                        list -> pagedResourcesAssembler.toModel(
+                        list -> pagedAssembler.toModel(
                                 new PageImpl<>(list, pageable, searchHits.getTotalHits())
                         )
                 ));

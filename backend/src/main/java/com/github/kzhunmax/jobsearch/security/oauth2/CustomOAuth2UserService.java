@@ -37,25 +37,19 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         OAuth2User oAuth2User = delegate.loadUser(request);
 
         String email = oAuth2User.getAttribute("email");
-        String username = oAuth2User.getAttribute("name");
 
         if ("github".equals(registrationId)) {
             if (email == null) {
                 email = oAuth2User.getAttribute("login") + "@github.local";
             }
-            if (username == null) {
-                username = oAuth2User.getAttribute("login");
-            }
         }
 
-        log.debug("Request [{}]: OAuth2 user loaded - email={}, username={}", requestId, email, username);
-        String finalUsername = username;
+        log.debug("Request [{}]: OAuth2 user loaded - email={}", requestId, email);
         String finalEmail = email;
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
                     log.info("Request [{}]: Creating new user for OAuth2 - email={}", requestId, finalEmail);
                     User newUser = User.builder()
-                            .username(finalUsername)
                             .email(finalEmail)
                             .password("")
                             .roles(Set.of(Role.ROLE_CANDIDATE))

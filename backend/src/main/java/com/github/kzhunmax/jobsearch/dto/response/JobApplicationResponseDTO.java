@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
             "jobId": 123,
             "jobTitle": "Java Developer",
             "company": "BigTech",
-            "candidateUsername": "user",
+            "candidateEmail": "user@example.com",
             "status": "APPLIED",
             "appliedAt": "2025-09-15T10:30:00Z",
             "coverLetter": "I am very interested in this position because...",
@@ -31,8 +31,8 @@ public record JobApplicationResponseDTO(
         @Schema(description = "Company offering the job", example = "BigTech")
         String company,
 
-        @Schema(description = "Username of the applicant", example = "user")
-        String candidateUsername,
+        @Schema(description = "Email of the applicant", example = "user@example.com")
+        String candidateEmail,
 
         @Schema(
                 description = "Current application status",

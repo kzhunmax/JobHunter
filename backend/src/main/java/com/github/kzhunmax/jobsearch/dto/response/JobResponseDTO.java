@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
                     "location": "Remote",
                     "salary": 120000.0,
                     "active": true,
-                    "postedBy": "recruiter",
+                    "postedBy": "recruiter@example.com",
                     "createdAt": "2025-09-15T10:30:00",
                     "updatedAt": "2025-09-15T10:30:00"
                 }
@@ -43,7 +43,7 @@ public record JobResponseDTO(
         @Schema(description = "Whether the job posting is active", example = "true")
         boolean active,
 
-        @Schema(description = "Username of the user who posted the job", example = "recruiter")
+        @Schema(description = "Email of the user who posted the job", example = "recruiter@example.com")
         String postedBy
 ) {
 }

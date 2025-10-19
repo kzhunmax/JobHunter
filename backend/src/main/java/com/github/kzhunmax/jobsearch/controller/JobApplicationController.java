@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
@@ -227,10 +228,11 @@ public class JobApplicationController {
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getApplicationForJob(
             @Parameter(description = "ID of the job", example = "1")
             @PathVariable Long jobId,
-            Pageable pageable) {
+            Pageable pageable,
+            PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Fetching applications for jobId={} with pageable={}", requestId, jobId, pageable);
-        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsForJob(jobId, pageable);
+        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsForJob(jobId, pageable, pagedAssembler);
         int total = applications.getMetadata() != null
                 ? (int) applications.getMetadata().getTotalElements()
                 : applications.getContent().size();
@@ -277,11 +279,15 @@ public class JobApplicationController {
                     )
             )
     )
-    public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getMyApplications(Authentication authentication, Pageable pageable) {
+    public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getMyApplications(
+            Authentication authentication,
+            Pageable pageable,
+            PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler
+    ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         String username = authentication.getName();
         log.info("Request [{}]: Fetching applications for candidate='{}' with pageable={}", requestId, username, pageable);
-        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(username, pageable);
+        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(username, pageable, pagedAssembler);
         int total = applications.getMetadata() != null
                 ? (int) applications.getMetadata().getTotalElements()
                 : applications.getContent().size();

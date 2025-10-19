@@ -13,9 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class JobApplication extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "job_id", nullable = false)

@@ -14,7 +14,7 @@ public class UserEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void sendUserEvent(UserEvent event) {
-        kafkaTemplate.send("user-events", event.username(), event);
+        kafkaTemplate.send("user-events", event.email(), event);
         log.info("Sent UserEvent to Kafka {}", event);
     }
 }

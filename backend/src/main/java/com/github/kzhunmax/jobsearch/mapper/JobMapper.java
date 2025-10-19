@@ -34,7 +34,7 @@ public class JobMapper {
                 job.getLocation(),
                 job.getSalary(),
                 job.isActive(),
-                job.getPostedBy() != null ? job.getPostedBy().getUsername() : null
+                job.getPostedBy() != null ? job.getPostedBy().getEmail() : null
         );
     }
 

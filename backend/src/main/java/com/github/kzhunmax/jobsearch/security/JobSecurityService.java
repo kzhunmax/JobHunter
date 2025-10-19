@@ -33,7 +33,7 @@ public class JobSecurityService {
             return false;
         }
         Job job = findJobById(jobId);
-        boolean isOwner = isJobOwner(job, getUsername(authentication));
+        boolean isOwner = isJobOwner(job, getEmail(authentication));
         log.debug("Request [{}]: Job ownership check completed - jobId={}, isOwner={}", requestId, jobId, isOwner);
         return isOwner;
     }
@@ -48,19 +48,19 @@ public class JobSecurityService {
         }
 
         JobApplication application = findApplicationById(applicationId);
-        String username = getUsername(authentication);
+        String email = getEmail(authentication);
 
         if (isAdmin(authentication)) {
             log.debug("Request [{}]: Application update permitted - admin user", requestId);
             return true;
         }
 
-        if (isApplicationJobOwner(application, username)) {
+        if (isApplicationJobOwner(application, email)) {
             log.debug("Request [{}]: Application update permitted - job owner", requestId);
             return true;
         }
 
-        if (isApplicationCandidate(application, username)) {
+        if (isApplicationCandidate(application, email)) {
             boolean permitted = status == ApplicationStatus.REJECTED;
             log.debug("Request [{}]: Application update permitted for candidate - permitted={}", requestId, permitted);
             return permitted;
@@ -88,19 +88,19 @@ public class JobSecurityService {
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
     }
 
-    private String getUsername(Authentication authentication) {
+    private String getEmail(Authentication authentication) {
         return authentication.getName();
     }
 
-    private boolean isJobOwner(Job job, String username) {
-        return job.getPostedBy().getUsername().equals(username);
+    private boolean isJobOwner(Job job, String email) {
+        return job.getPostedBy().getEmail().equalsIgnoreCase(email);
     }
 
-    private boolean isApplicationJobOwner(JobApplication application, String username) {
-        return application.getJob().getPostedBy().getUsername().equals(username);
+    private boolean isApplicationJobOwner(JobApplication application, String email) {
+        return application.getJob().getPostedBy().getEmail().equalsIgnoreCase(email);
     }
 
-    private boolean isApplicationCandidate(JobApplication application, String username) {
-        return application.getCandidate().getUsername().equals(username);
+    private boolean isApplicationCandidate(JobApplication application, String email) {
+        return application.getCandidate().getEmail().equalsIgnoreCase(email);
     }
 }

@@ -18,7 +18,7 @@ public class JobApplicationMapper {
                 job != null ? job.getId() : null,
                 job != null ? job.getTitle() : null,
                 job != null ? job.getCompany() : null,
-                candidate != null ? candidate.getUsername() : null,
+                candidate != null ? candidate.getEmail() : null,
                 application.getStatus() != null ? application.getStatus().name() : null,
                 application.getAppliedAt() != null ? application.getAppliedAt().toString() : null,
                 application.getCoverLetter()

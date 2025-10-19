@@ -13,7 +13,6 @@ import java.util.Set;
         description = "DTO for new user registration",
         example = """
                 {
-                    "username": "user",
                     "email": "user@example.com",
                     "password": "Password123",
                     "confirmPassword": "Password123",
@@ -22,9 +21,6 @@ import java.util.Set;
                 """
 )
 public record UserRegistrationDTO(
-
-        @Schema(description = "Unique username", example = "user", minLength = 3, maxLength = 50)
-        @NotBlank @Size(min = 3, max = 50) String username,
 
         @Schema(description = "User email", example = "user@example.com", format = "email")
         @NotBlank @Email String email,

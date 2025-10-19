@@ -8,7 +8,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "jobs", indexes = {
-        @Index(columnList = "title", name = "job_title_index")
+        @Index(columnList = "title", name = "job_title_index"),
+        @Index(columnList = "posted_by_id", name = "idx_jobs_posted_by")
 })
 @Getter
 @Setter
@@ -16,9 +17,6 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class Job extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @Column(nullable = false, length = 200)
     private String title;

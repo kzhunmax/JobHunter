@@ -32,15 +32,14 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 public class JobService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
-    private final PagedResourcesAssembler<JobResponseDTO> pagedAssembler;
     private final JobSyncService jobSyncService;
     private final JobMapper jobMapper;
 
     @Transactional
-    public JobResponseDTO createJob(JobRequestDTO dto, String username) {
+    public JobResponseDTO createJob(JobRequestDTO dto, String email) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Creating job - username={}", requestId, username);
-        User user = findUserByUsername(username);
+        log.info("Request [{}]: Creating job - email={}", requestId, email);
+        User user = findUserByEmail(email);
         Job job = jobMapper.toEntity(dto, user);
         Job savedJob = jobRepository.save(job);
         log.info("Request [{}]: Job created successfully - jobId={}", requestId, savedJob.getId());
@@ -48,9 +47,9 @@ public class JobService {
         return jobMapper.toDto(savedJob);
     }
 
-    private User findUserByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    private User findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
     }
 
     @Cacheable(value = "jobs", key = "#jobId")
@@ -94,7 +93,10 @@ public class JobService {
     }
 
     @Transactional(readOnly = true)
-    public PagedModel<EntityModel<JobResponseDTO>> getAllActiveJobs(Pageable pageable) {
+    public PagedModel<EntityModel<JobResponseDTO>> getAllActiveJobs(
+            Pageable pageable,
+            PagedResourcesAssembler<JobResponseDTO> pagedAssembler
+    ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Fetching all active jobs - pageable={}", requestId, pageable);
         Page<JobResponseDTO> jobPage = jobRepository.findByActiveTrue(pageable)
@@ -105,15 +107,19 @@ public class JobService {
     }
 
     @Transactional(readOnly = true)
-    public PagedModel<EntityModel<JobResponseDTO>> getJobsByRecruiter(String username, Pageable pageable) {
+    public PagedModel<EntityModel<JobResponseDTO>> getJobsByRecruiter(
+            String email,
+            Pageable pageable,
+            PagedResourcesAssembler<JobResponseDTO> pagedAssembler
+    ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching jobs by recruiter - username={}, pageable={}", requestId, username, pageable);
-        User recruiter = findUserByUsername(username);
+        log.info("Request [{}]: Fetching jobs by recruiter - email={}, pageable={}", requestId, email, pageable);
+        User recruiter = findUserByEmail(email);
         Page<JobResponseDTO> jobPage = jobRepository.findByPostedBy(recruiter, pageable)
                 .map(jobMapper::toDto);
 
         long total = jobPage.getTotalElements();
-        log.info("Request [{}]: Found {} jobs for recruiter={}", requestId, total, username);
+        log.info("Request [{}]: Found {} jobs for recruiter={}", requestId, total, email);
         return pagedAssembler.toModel(jobPage, EntityModel::of);
     }
 }

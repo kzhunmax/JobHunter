@@ -50,13 +50,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private void processJwtAuthentication(HttpServletRequest request, String jwt) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         try {
-            String username = jwtService.extractUsername(jwt);
+            String email = jwtService.extractEmail(jwt);
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    log.debug("Request [{}]: User authenticated successfully - username={}", requestId, username);
+                    log.debug("Request [{}]: User authenticated successfully - email={}", requestId, email);
                     authenticateUser(request, userDetails);
                 }
             }

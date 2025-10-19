@@ -2,7 +2,6 @@ package com.github.kzhunmax.jobsearch.validator;
 
 import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.exception.EmailExistsException;
-import com.github.kzhunmax.jobsearch.exception.UsernameExistsException;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,9 +19,7 @@ public class UserRegistrationValidator {
     public void validateRegistration(UserRegistrationDTO dto) {
         validatePasswordConfirmation(dto);
         validatePasswordFormat(dto);
-        validateUsernameUniqueness(dto);
         validateEmailUniqueness(dto);
-        validateUsernameNotEmpty(dto);
         validateEmailFormat(dto);
     }
 
@@ -38,23 +35,10 @@ public class UserRegistrationValidator {
         }
     }
 
-    private void validateUsernameUniqueness(UserRegistrationDTO dto) {
-        String username = dto.username().trim();
-        if (userRepository.existsByUsername(username)) {
-            throw new UsernameExistsException(username);
-        }
-    }
-
     private void validateEmailUniqueness(UserRegistrationDTO dto) {
         String email = dto.email().trim();
         if (userRepository.existsByEmail(email)) {
             throw new EmailExistsException(email);
-        }
-    }
-
-    private void validateUsernameNotEmpty(UserRegistrationDTO dto) {
-        if (dto.username().trim().isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be empty");
         }
     }
 

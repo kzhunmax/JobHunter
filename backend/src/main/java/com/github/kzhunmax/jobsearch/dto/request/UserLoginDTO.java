@@ -5,19 +5,19 @@ import jakarta.validation.constraints.NotBlank;
 
 @Schema(
         description = "DTO for login",
-        requiredProperties = {"usernameOrEmail", "password"},
+        requiredProperties = {"email", "password"},
         example = """
                 {
-                    "usernameOrEmail": "user@example.com",
+                    "email": "user@example.com",
                     "password": "Password123"
                 }
                 """
 )
 public record UserLoginDTO(
 
-        @Schema(description = "Username or email address for login", example = "user", minLength = 3, maxLength = 255)
-        @NotBlank(message = "Username or email is required")
-        String usernameOrEmail,
+        @Schema(description = "Email address for login", example = "user@example.com", minLength = 3, maxLength = 255)
+        @NotBlank(message = "Email is required")
+        String email,
 
         @Schema(description = "User password", example = "Password123", minLength = 8, maxLength = 100, format = "password")
         @NotBlank(message = "Password is required")

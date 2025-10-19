@@ -20,7 +20,6 @@ public class UserMapper {
         if (dto == null) return null;
 
         return User.builder()
-                .username(dto.username().trim())
                 .email(dto.email().trim())
                 .password(passwordEncoder.encode(dto.password()))
                 .roles(roles)
@@ -31,7 +30,6 @@ public class UserMapper {
         if (user == null) return null;
 
         return new UserResponseDTO(
-                user.getUsername(),
                 user.getEmail(),
                 user.getRoles()
         );

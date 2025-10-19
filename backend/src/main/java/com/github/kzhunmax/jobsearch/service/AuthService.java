@@ -46,35 +46,35 @@ public class AuthService {
     @Transactional
     public UserResponseDTO registerUser(UserRegistrationDTO dto) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Registering user - username={}", requestId, dto.username());
+        log.info("Request [{}]: Registering user - email={}", requestId, dto.email());
         userRegistrationValidator.validateRegistration(dto);
         Set<Role> roles = resolveRoles(dto.roles());
         User user = userMapper.toEntity(dto, roles);
         User savedUser = userRepository.save(user);
-        UserEvent event = new UserEvent(dto.username(), dto.email(), EventType.REGISTERED);
+        UserEvent event = new UserEvent(dto.email(), EventType.REGISTERED);
         userEventProducer.sendUserEvent(event);
-        log.info("Request [{}]: User registered successfully - username={}", requestId, dto.username());
+        log.info("Request [{}]: User registered successfully - email={}", requestId, dto.email());
         return userMapper.toDto(savedUser);
     }
 
-    public JwtResponse authenticate(String usernameOrEmail, HttpServletResponse response) {
+    public JwtResponse authenticate(String email, HttpServletResponse response) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Authenticating user - usernameOrEmail={}", requestId, usernameOrEmail);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(usernameOrEmail);
-        log.info("Request [{}]: User authenticated successfully - usernameOrEmail={}", requestId, usernameOrEmail);
+        log.info("Request [{}]: Authenticating user - email={}", requestId, email);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        log.info("Request [{}]: User authenticated successfully - email={}", requestId, email);
         return issueTokens(userDetails, response);
     }
 
     public JwtResponse refreshTokens(String refreshToken, HttpServletResponse response) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Refreshing tokens", requestId);
-        String username = jwtService.extractUsername(refreshToken);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        String email = jwtService.extractEmail(refreshToken);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
         if (!jwtService.isTokenValid(refreshToken, userDetails)) {
             throw new ApiException("Refresh token is invalid or expired", HttpStatus.UNAUTHORIZED, "INVALID_REFRESH");
         }
-        log.info("Request [{}]: Tokens refreshed successfully - username={}", requestId, username);
+        log.info("Request [{}]: Tokens refreshed successfully - email={}", requestId, email);
         return issueTokens(userDetails, response);
     }
 

@@ -10,16 +10,12 @@ import java.util.Set;
         description = "User data response object containing basic user information",
         example = """
                 {
-                    "username": "user",
                     "email": "user@xample.com"
                     "roles": ["ROLE_CANDIDATE"]
                 }
                 """
 )
 public record UserResponseDTO(
-
-        @Schema(description = "Unique username identifier", example = "user", minLength = 3, maxLength = 50)
-        String username,
 
         @Schema(description = "User's email address", example = "user@example", format = "email")
         String email,
@@ -29,7 +25,6 @@ public record UserResponseDTO(
 ) {
     public static UserResponseDTO fromEntity(User user) {
         return new UserResponseDTO(
-                user.getUsername(),
                 user.getEmail(),
                 user.getRoles()
         );

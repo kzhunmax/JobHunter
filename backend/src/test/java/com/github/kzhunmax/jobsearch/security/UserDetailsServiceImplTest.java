@@ -38,7 +38,7 @@ public class UserDetailsServiceImplTest {
 
     @Test
     void loadUserByUsername_userExists_returnsUserDetails() {
-        when(userRepository.findByUsernameOrEmail(TEST_USERNAME, TEST_USERNAME)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(TEST_USERNAME)).thenReturn(Optional.of(testUser));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(TEST_USERNAME);
 

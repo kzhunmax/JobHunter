@@ -51,7 +51,6 @@ public class AuthController {
                                     value = """
                                             {
                                               "data": {
-                                                "username": "user",
                                                 "email": "user@example.com",
                                                 "roles": [
                                                   "ROLE_CANDIDATE"
@@ -90,7 +89,7 @@ public class AuthController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
-                    description = "User with provided username or email already exists",
+                    description = "User with provided email already exists",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponse.class),
@@ -100,8 +99,8 @@ public class AuthController {
                                               "data": null,
                                               "errors": [
                                                 {
-                                                  "code": "USERNAME_TAKEN",
-                                                  "message": "Username recruiter is already taken"
+                                                  "code": "EMAIL_TAKEN",
+                                                  "message": "Email is already taken"
                                                 }
                                               ],
                                               "timestamp": "2025-09-22T10:15:30Z",
@@ -121,10 +120,10 @@ public class AuthController {
             @Valid @RequestBody UserRegistrationDTO userRegistrationDTO) {
 
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Processing registration request for username={}", requestId, userRegistrationDTO.username());
+        log.info("Request [{}]: Processing registration request for email={}", requestId, userRegistrationDTO.email());
 
         UserResponseDTO user = authService.registerUser(userRegistrationDTO);
-        log.info("Request [{}]: Successfully registered for username={}", requestId, user.username());
+        log.info("Request [{}]: Successfully registered for email={}", requestId, user.email());
         return ApiResponse.created(user, requestId);
     }
 
@@ -183,7 +182,7 @@ public class AuthController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "Invalid username/email or password",
+                    description = "Invalid email or password",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponse.class),
@@ -194,7 +193,7 @@ public class AuthController {
                                               "errors": [
                                                 {
                                                   "code": "AUTH_FAILED",
-                                                  "message": "Invalid username or password"
+                                                  "message": "Invalid email or password"
                                                 }
                                               ],
                                               "timestamp": "2025-09-22T10:15:30Z",
@@ -215,11 +214,11 @@ public class AuthController {
             HttpServletResponse response
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Login attempt for username={}", requestId, loginDto.usernameOrEmail());
+        log.info("Request [{}]: Login attempt for email={}", requestId, loginDto.email());
 
-        JwtResponse jwtResponse = authService.authenticate(loginDto.usernameOrEmail(), response);
+        JwtResponse jwtResponse = authService.authenticate(loginDto.email(), response);
 
-        log.info("Request [{}]: Successful login for username={}", requestId, loginDto.usernameOrEmail());
+        log.info("Request [{}]: Successful login for email={}", requestId, loginDto.email());
 
         return ApiResponse.success(jwtResponse, requestId);
     }

@@ -8,8 +8,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users", indexes = {
-        @Index(columnList = "username", name = "username_index"),
-        @Index(columnList = "email", name = "email_index")
+        @Index(columnList = "email", name = "idx_users_email")
 })
 @Getter
 @Setter
@@ -17,12 +16,6 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class User extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(unique = true, nullable = false, length = 50)
-    private String username;
 
     @Column(unique = true, nullable = false, length = 100)
     private String email;
@@ -34,7 +27,7 @@ public class User extends BaseEntity {
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "role")
+    @Column(name = "role", nullable = false, length = 50)
     private Set<Role> roles = new HashSet<>();
 
     @Builder.Default

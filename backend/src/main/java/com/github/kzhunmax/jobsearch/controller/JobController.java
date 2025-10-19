@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
@@ -191,10 +192,12 @@ public class JobController {
             )
     )
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> listJobs(
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
+            PagedResourcesAssembler<JobResponseDTO> pagedAssembler
+    ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Listing all active jobs - pageable={}", requestId, pageable);
-        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getAllActiveJobs(pageable);
+        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getAllActiveJobs(pageable, pagedAssembler);
         log.info("Request [{}]: Active jobs listed successfully", requestId);
         return ApiResponse.success(jobs, requestId);
     }
@@ -479,11 +482,12 @@ public class JobController {
     )
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> getMyJobs(
             Authentication authentication,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable,
+            PagedResourcesAssembler<JobResponseDTO> pagedAssembler) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         String username = authentication.getName();
         log.info("Request [{}]: Getting my jobs - username={}, pageable={}", requestId, username, pageable);
-        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(username, pageable);
+        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(username, pageable, pagedAssembler);
         log.info("Request [{}]: My jobs retrieved successfully - username={}", requestId, username);
         return ApiResponse.success(jobs, requestId);
     }
@@ -505,13 +509,14 @@ public class JobController {
     })
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobDocument>>>> searchJobs(
             @Parameter(description = "Search keyword", example = "Java") @RequestParam String query,
-            @Parameter(description = "Optional location filter", example = "Remote") @RequestParam (required = false) String location,
-            @Parameter(description = "Optional company filter", example = "TechCorp") @RequestParam (required = false) String company,
-            @PageableDefault(size = 20) Pageable pageable
+            @Parameter(description = "Optional location filter", example = "Remote") @RequestParam(required = false) String location,
+            @Parameter(description = "Optional company filter", example = "TechCorp") @RequestParam(required = false) String company,
+            @PageableDefault(size = 20) Pageable pageable,
+            PagedResourcesAssembler<JobDocument> pagedAssembler
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Searching jobs - query={}, location={}, company={}", requestId, query, location, company);
-        PagedModel<EntityModel<JobDocument>> results = jobSearchService.searchJobs(query, location, company, pageable);
+        PagedModel<EntityModel<JobDocument>> results = jobSearchService.searchJobs(query, location, company, pageable, pagedAssembler);
         log.info("Request [{}]: Search completed - {} results", requestId, results.getMetadata().getTotalElements());
         return ApiResponse.success(results, requestId);
     }
