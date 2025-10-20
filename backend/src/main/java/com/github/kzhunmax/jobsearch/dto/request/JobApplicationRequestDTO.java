@@ -20,6 +20,8 @@ public record JobApplicationRequestDTO(
                 maxLength = 2000
         )
         @Size(max = 2000)
-        String coverLetter
+        String coverLetter,
+
+        String cvUrl
 ) {
 }

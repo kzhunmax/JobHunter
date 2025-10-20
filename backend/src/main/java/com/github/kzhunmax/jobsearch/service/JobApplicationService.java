@@ -15,6 +15,7 @@ import com.github.kzhunmax.jobsearch.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -26,6 +27,14 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import java.util.Objects;
+import java.util.UUID;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -37,20 +46,30 @@ public class JobApplicationService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
     private final JobApplicationMapper jobApplicationMapper;
+    private final S3Client s3Client;
+
+    @Value("${supabase.url}")
+    private String supabaseUrl;
+
+    @Value("${supabase.bucket:resumes}")
+    private String supabaseBucket;
+
+    private static final int ACCEPTABLE_FILE_SIZE = 5 * 1024 * 1024;
 
     @Caching(evict = {
             @CacheEvict(value = "applicationByJob", allEntries = true),
             @CacheEvict(value = "applicationByCandidate", allEntries = true)
     })
     @Transactional
-    public JobApplicationResponseDTO applyToJob(Long jobId, String email, String coverLetter) {
+    public JobApplicationResponseDTO applyToJob(Long jobId, String email, String coverLetter, MultipartFile cv) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Applying to job - jobId={}, email={}", requestId, jobId, email);
         Job job = findJobById(jobId);
         User candidate = findUserByEmail(email);
         validateNoDuplicateApplication(job, candidate);
-
-        JobApplication application = createAndSaveApplication(job, candidate, coverLetter);
+        validateResume(cv);
+        String cvUrl = uploadCvToSupabase(cv, email, requestId);
+        JobApplication application = createAndSaveApplication(job, candidate, coverLetter, cvUrl);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
         return jobApplicationMapper.toDto(application);
     }
@@ -126,14 +145,53 @@ public class JobApplicationService {
             throw new DuplicateApplicationException();
     }
 
-    private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter) {
+    private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter, String cvUrl) {
         JobApplication application = JobApplication.builder()
                 .job(job)
                 .candidate(candidate)
                 .status(ApplicationStatus.APPLIED)
                 .coverLetter(coverLetter)
+                .cvUrl(cvUrl)
                 .build();
 
         return jobApplicationRepository.save(application);
+    }
+
+    private void validateResume(MultipartFile cv) {
+        if (cv.isEmpty() || !Objects.equals(cv.getContentType(), "application/pdf")) {
+            throw new IllegalArgumentException("CV must be a non-empty PDF file");
+        }
+        if (cv.getSize() > ACCEPTABLE_FILE_SIZE) {
+            throw new IllegalArgumentException("CV size exceeds 5MB limit");
+        }
+    }
+
+    private String uploadCvToSupabase(MultipartFile cv, String email, String requestId) {
+        try {
+            String uuid = UUID.randomUUID().toString();
+            String originalName = StringUtils.cleanPath(Objects.requireNonNull(cv.getOriginalFilename()));
+            String fileName = uuid + "_" + StringUtils.getFilename(originalName);
+            String path = "candidates/" + email.replace('@', '_') + "/" + fileName;
+
+            log.debug("Request [{}]: Uploading CV to Supabase S3 at path={}", requestId, path);
+
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(supabaseBucket)
+                    .key(path)
+                    .contentType(cv.getContentType())
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(
+                    cv.getInputStream(), cv.getSize()));
+
+            String publicUrl = supabaseUrl + "/storage/v1/object/public/" + supabaseBucket + "/" + path;
+
+            log.info("Request [{}]: CV uploaded successfully to Supabase S3 - url={}", requestId, publicUrl);
+            return publicUrl;
+
+        } catch (Exception e) {
+            log.error("Request [{}]: Failed to upload CV to Supabase S3 for email={}", requestId, email, e);
+            throw new RuntimeException("CV upload to Supabase S3 failed: " + e.getMessage());
+        }
     }
 }

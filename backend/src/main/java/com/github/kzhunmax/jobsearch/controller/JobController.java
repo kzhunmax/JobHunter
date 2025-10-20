@@ -62,7 +62,7 @@ public class JobController {
                                                 "location": "Remote",
                                                 "salary": 1020000,
                                                 "active": true,
-                                                "postedBy": "recruiter"
+                                                "postedBy": "recruiter@example.com"
                                               },
                                               "errors": [],
                                               "timestamp": "2025-09-29T20:00:28.786132065Z",
@@ -124,10 +124,10 @@ public class JobController {
             Authentication authentication
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        String username = authentication.getName();
-        log.info("Request [{}]: Creating job - username={}", requestId, username);
-        JobResponseDTO job = jobService.createJob(dto, username);
-        log.info("Request [{}]: Job created successfully - username={}", requestId, username);
+        String email = authentication.getName();
+        log.info("Request [{}]: Creating job - email={}", requestId, email);
+        JobResponseDTO job = jobService.createJob(dto, email);
+        log.info("Request [{}]: Job created successfully - email={}", requestId, email);
         return ApiResponse.created(job, requestId);
     }
 
@@ -161,7 +161,7 @@ public class JobController {
                                             "location": "Remote",
                                             "salary": 1020000,
                                             "active": true,
-                                            "postedBy": "recruiter",
+                                            "postedBy": "recruiter@example.com",
                                             "links": []
                                           },
                                           {
@@ -172,7 +172,7 @@ public class JobController {
                                             "location": "Remote",
                                             "salary": 1020000,
                                             "active": true,
-                                            "postedBy": "recruiter",
+                                            "postedBy": "recruiter@example.com",
                                             "links": []
                                           }
                                         ],
@@ -225,7 +225,7 @@ public class JobController {
                                                 "location": "Remote",
                                                 "salary": 1020000,
                                                 "active": true,
-                                                "postedBy": "recruiter"
+                                                "postedBy": "recruiter@example.com"
                                               },
                                               "errors": [],
                                               "timestamp": "2025-10-01T20:15:54.924550574Z",
@@ -293,7 +293,7 @@ public class JobController {
                                                 "location": "Hybrid",
                                                 "salary": 130000,
                                                 "active": true,
-                                                "postedBy": "recruiter"
+                                                "postedBy": "recruiter@example.com"
                                               },
                                               "errors": [],
                                               "timestamp": "2025-10-01T20:17:27.613225110Z",
@@ -450,7 +450,7 @@ public class JobController {
                                             "location": "Remote",
                                             "salary": 1020000,
                                             "active": true,
-                                            "postedBy": "recruiter",
+                                            "postedBy": "recruiter@example.com",
                                             "links": []
                                           },
                                           {
@@ -461,7 +461,7 @@ public class JobController {
                                             "location": "Remote",
                                             "salary": 1020000,
                                             "active": true,
-                                            "postedBy": "recruiter",
+                                            "postedBy": "recruiter@example.com",
                                             "links": []
                                           }
                                         ],
@@ -485,10 +485,10 @@ public class JobController {
             @PageableDefault(size = 20) Pageable pageable,
             PagedResourcesAssembler<JobResponseDTO> pagedAssembler) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        String username = authentication.getName();
-        log.info("Request [{}]: Getting my jobs - username={}, pageable={}", requestId, username, pageable);
-        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(username, pageable, pagedAssembler);
-        log.info("Request [{}]: My jobs retrieved successfully - username={}", requestId, username);
+        String email = authentication.getName();
+        log.info("Request [{}]: Getting my jobs - email={}, pageable={}", requestId, email, pageable);
+        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(email, pageable, pagedAssembler);
+        log.info("Request [{}]: My jobs retrieved successfully - email={}", requestId, email);
         return ApiResponse.success(jobs, requestId);
     }
 

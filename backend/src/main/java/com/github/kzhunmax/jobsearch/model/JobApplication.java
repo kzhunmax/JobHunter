@@ -33,4 +33,7 @@ public class JobApplication extends BaseEntity {
 
     @Column(name = "cover_letter", columnDefinition = "TEXT")
     private String coverLetter;
+
+    @Column(name = "cv_url")
+    private String cvUrl;
 }

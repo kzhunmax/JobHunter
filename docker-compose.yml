@@ -34,6 +34,9 @@ services:
       SPRING_KAFKA_EMAIL: ${SPRING_KAFKA_EMAIL}
       SPRING_KAFKA_PASSWORD: ${SPRING_KAFKA_PASSWORD}
 
+      SUPABASE_S3_ACCESS_KEY: ${SUPABASE_S3_ACCESS_KEY}
+      SUPABASE_S3_SECRET_KEY: ${SUPABASE_S3_SECRET_KEY}
+
     container_name: job-search-backend
     ports:
       - "8080:8080"

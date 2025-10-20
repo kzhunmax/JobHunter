@@ -45,6 +45,9 @@ public record JobApplicationResponseDTO(
         String appliedAt,
 
         @Schema(description = "Cover letter text", example = "I am very interested in this position because...")
-        String coverLetter
+        String coverLetter,
+
+        @Schema(description = "An url to candidate resume")
+        String cvUrl
 ) {
 }

@@ -56,3 +56,11 @@ jwt:
   secret-key: ${JWT_SECRET_KEY}
   expiration: ${JWT_EXPIRATION}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION}
+supabase:
+  url: https://wmavvzxcdwolkkqfetcl.supabase.co
+  s3:
+    endpoint: https://wmavvzxcdwolkkqfetcl.storage.supabase.co/storage/v1/s3
+    region: eu-north-1
+    access-key-id: ${SUPABASE_S3_ACCESS_KEY}
+    secret-access-key: ${SUPABASE_S3_SECRET_KEY}
+  bucket: resumes

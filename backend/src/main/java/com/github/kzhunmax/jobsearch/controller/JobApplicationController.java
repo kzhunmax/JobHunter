@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kzhunmax.jobsearch.dto.request.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.dto.response.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.model.ApplicationStatus;
@@ -19,10 +20,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -34,12 +37,13 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 public class JobApplicationController {
 
     private final JobApplicationService jobApplicationService;
+    private final ObjectMapper objectMapper;
 
-    @PostMapping("/apply/{jobId}")
+    @PostMapping(value = "/apply/{jobId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('CANDIDATE')")
     @Operation(
             summary = "Apply to a job",
-            description = "Submit a job application for the specified job position"
+            description = "Submit a job application for the specified job position, including cover letter and CV (PDF) upload"
     )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -56,12 +60,36 @@ public class JobApplicationController {
                                                 "jobId": 1,
                                                 "jobTitle": "Java Developer",
                                                 "company": "TechCorp",
-                                                "candidateUsername": "user",
+                                                "candidateEmail": "user@example.com",
                                                 "status": "APPLIED",
                                                 "appliedAt": "2025-09-22T10:15:30Z",
-                                                "coverLetter": "Some text in cover letter"
+                                                "coverLetter": "Some text in cover letter",
+                                                "cvUrl": "https://your-supabase-url/storage/v1/object/public/cvs/candidates/user_example_com/uuid_filename.pdf"
                                               },
                                               "errors": [],
+                                              "timestamp": "2025-09-22T10:15:30Z",
+                                              "requestId": "request-123"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Job not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "data": null,
+                                              "errors": [
+                                                {
+                                                  "code": "INVALID_CV",
+                                                  "message": "CV must be a non-empty PDF file"
+                                                }
+                                              ],,
                                               "timestamp": "2025-09-22T10:15:30Z",
                                               "requestId": "request-123"
                                             }
@@ -125,14 +153,22 @@ public class JobApplicationController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = JobApplicationRequestDTO.class))
             )
-            @RequestBody JobApplicationRequestDTO requestDto, Authentication authentication) {
-        String username = authentication.getName();
-        log.info("User '{}' is applying to job with id={} | coverLetterLength={}", username, jobId, requestDto.coverLetter().length());
-        JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, username, requestDto.coverLetter());
-        log.info("User '{}' successfully applied to job id={} | applicationId={}", username, jobId, responseDto.id());
-        return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
+            @RequestPart("request") String requestJson,
+            @Parameter(description = "CV file (PDF, max 5MB) - form part named 'cv'", required = true)
+            @RequestPart("cv") MultipartFile cv,
+            Authentication authentication) {
+        String email = authentication.getName();
+        try {
+            JobApplicationRequestDTO requestDto = objectMapper.readValue(requestJson, JobApplicationRequestDTO.class);
+            log.info("User '{}' is applying to job with id={} | coverLetterLength={}", email, jobId, requestDto.coverLetter().length());
+            JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, email, requestDto.coverLetter(), cv);
+            log.info("User '{}' successfully applied to job id={} | applicationId={}", email, jobId, responseDto.id());
+            return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
+        } catch (Exception e) {
+            log.error("Failed to parse request JSON for user {}: {}", email, e.getMessage());
+            throw new IllegalArgumentException("Invalid JSON in request part: " + e.getMessage());
+        }
     }
-
     @GetMapping("/job/{jobId}")
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication) or hasRole('ADMIN')")
     @Operation(
@@ -162,10 +198,11 @@ public class JobApplicationController {
                                                     "jobId": 1,
                                                     "jobTitle": "Java Developer",
                                                     "company": "TechCorp",
-                                                    "candidateUsername": "user",
+                                                    "candidateEmail": "user@example",
                                                     "status": "APPLIED",
                                                     "appliedAt": "2025-09-22T10:15:30Z",
                                                     "coverLetter": "CV",
+                                                    "cvUrl": "https://your-supabase-url/storage/v1/object/public/cvs/candidates/user_example_com/uuid_filename.pdf",
                                                     "links": []
                                                   }
                                                 ],
@@ -263,11 +300,23 @@ public class JobApplicationController {
                                             "href": "http://localhost:8080/api/applications/my-applications?page=0&size=20"
                                           }
                                         ],
-                                        "content": [],
+                                        "content": [
+                                        {
+                                            "id": 1,
+                                            "jobId": 1,
+                                            "jobTitle": "Java Developer",
+                                            "company": "TechCorp",
+                                            "status": "APPLIED",
+                                            "appliedAt": "2025-09-22T10:15:30Z",
+                                            "coverLetter": "CV",
+                                            "cvUrl": "https://your-supabase-url/storage/v1/object/public/cvs/candidates/user_example_com/uuid_filename.pdf",
+                                            "links": []
+                                          }
+                                        ],
                                         "page": {
                                           "size": 20,
-                                          "totalElements": 0,
-                                          "totalPages": 0,
+                                          "totalElements": 1,
+                                          "totalPages": 1,
                                           "number": 0
                                         }
                                       },
@@ -285,14 +334,14 @@ public class JobApplicationController {
             PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        String username = authentication.getName();
-        log.info("Request [{}]: Fetching applications for candidate='{}' with pageable={}", requestId, username, pageable);
-        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(username, pageable, pagedAssembler);
+        String email = authentication.getName();
+        log.info("Request [{}]: Fetching applications for candidate='{}' with pageable={}", requestId, email, pageable);
+        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(email, pageable, pagedAssembler);
         int total = applications.getMetadata() != null
                 ? (int) applications.getMetadata().getTotalElements()
                 : applications.getContent().size();
 
-        log.info("Request [{}]: Found {} applications for candidate='{}'", requestId, total, username);
+        log.info("Request [{}]: Found {} applications for candidate='{}'", requestId, total, email);
         return ApiResponse.success(applications, requestId);
     }
 
@@ -317,10 +366,11 @@ public class JobApplicationController {
                                                 "jobId": 1,
                                                 "jobTitle": "Java Developer",
                                                 "company": "TechCorp",
-                                                "candidateUsername": "user",
+                                                "candidateEmail": "user@example.com",
                                                 "status": "UNDER_REVIEW",
                                                 "appliedAt": "2025-09-30T17:31:57.448674Z",
-                                                "coverLetter": "CV"
+                                                "coverLetter": "CV",
+                                                "cvUrl": "https://your-supabase-url/storage/v1/object/public/cvs/candidates/user_example_com/uuid_filename.pdf"
                                               },
                                               "errors": [],
                                               "timestamp": "2025-09-22T10:15:30Z",
