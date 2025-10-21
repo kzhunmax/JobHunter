@@ -2,6 +2,7 @@ package com.github.kzhunmax.jobsearch.mapper;
 
 import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.dto.response.UserResponseDTO;
+import com.github.kzhunmax.jobsearch.model.AuthProvider;
 import com.github.kzhunmax.jobsearch.model.Role;
 import com.github.kzhunmax.jobsearch.model.User;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class UserMapper {
         return User.builder()
                 .email(dto.email().trim())
                 .password(passwordEncoder.encode(dto.password()))
+                .provider(AuthProvider.LOCAL)
                 .roles(roles)
                 .build();
     }

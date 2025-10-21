@@ -1,0 +1,5 @@
+ALTER TABLE users
+    ADD provider VARCHAR(255);
+
+ALTER TABLE users
+    ALTER COLUMN provider SET NOT NULL;

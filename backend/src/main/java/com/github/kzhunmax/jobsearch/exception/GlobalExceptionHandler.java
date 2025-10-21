@@ -36,6 +36,13 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", "Authentication is required", requestId);
     }
 
+    @ExceptionHandler(OAuth2AuthenticationProcessingException.class)
+    public ResponseEntity<ApiResponse<Object>> handleOAuth2AuthenticationProcessingException(OAuth2AuthenticationProcessingException ex) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.warn("Request [{}]: OAuth2AuthenticationProcessingException caught - {}", requestId, ex.getMessage());
+        return ApiResponse.error(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", ex.getMessage(), requestId);
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Object>> handleApiException(ApiException ex) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);

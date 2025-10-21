@@ -1,11 +1,9 @@
 package com.github.kzhunmax.jobsearch.config;
 
 import com.github.kzhunmax.jobsearch.security.JwtAuthFilter;
-import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.filter.LoggingFilter;
-import com.github.kzhunmax.jobsearch.security.oauth2.CustomOAuth2User;
 import com.github.kzhunmax.jobsearch.security.oauth2.CustomOAuth2UserService;
-import com.github.kzhunmax.jobsearch.service.CookieService;
+import com.github.kzhunmax.jobsearch.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -31,8 +29,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final LoggingFilter loggingFilter;
-    private final CookieService cookieService;
-    private final JwtService jwtService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -56,14 +53,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler((request, response, authentication) -> {
-                            CustomOAuth2User user = (CustomOAuth2User) authentication.getPrincipal();
-                            String accessToken = user.accessToken();
-                            String refreshToken = user.refreshToken();
-
-                            cookieService.addAuthCookiesToResponse(accessToken, refreshToken, jwtService, response);
-                            response.sendRedirect("/api/auth/main");
-                        })
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
 
                 .sessionManagement(sm -> sm
