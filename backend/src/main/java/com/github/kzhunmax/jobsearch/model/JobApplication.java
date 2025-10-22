@@ -3,6 +3,8 @@ package com.github.kzhunmax.jobsearch.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+
 @Entity
     @Table(name = "job_applications", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"job_id", "candidate_id"})
@@ -24,16 +26,17 @@ public class JobApplication extends BaseEntity {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 50)
     private ApplicationStatus status = ApplicationStatus.APPLIED;
 
     @Builder.Default
     @Column(nullable = false, updatable = false)
-    private java.time.Instant appliedAt = java.time.Instant.now();
+    private Instant appliedAt = Instant.now();
 
     @Column(name = "cover_letter", columnDefinition = "TEXT")
     private String coverLetter;
 
-    @Column(name = "cv_url")
-    private String cvUrl;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "resume_id", nullable = false)
+    private Resume resume;
 }

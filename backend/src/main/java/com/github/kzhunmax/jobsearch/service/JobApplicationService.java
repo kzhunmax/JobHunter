@@ -5,12 +5,10 @@ import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
 import com.github.kzhunmax.jobsearch.exception.DuplicateApplicationException;
 import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
 import com.github.kzhunmax.jobsearch.mapper.JobApplicationMapper;
-import com.github.kzhunmax.jobsearch.model.ApplicationStatus;
-import com.github.kzhunmax.jobsearch.model.Job;
-import com.github.kzhunmax.jobsearch.model.JobApplication;
-import com.github.kzhunmax.jobsearch.model.User;
+import com.github.kzhunmax.jobsearch.model.*;
 import com.github.kzhunmax.jobsearch.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.repository.ResumeRepository;
 import com.github.kzhunmax.jobsearch.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +43,7 @@ public class JobApplicationService {
     private final JobApplicationRepository jobApplicationRepository;
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
+    private final ResumeRepository resumeRepository;
     private final JobApplicationMapper jobApplicationMapper;
     private final S3Client s3Client;
 
@@ -61,15 +60,16 @@ public class JobApplicationService {
             @CacheEvict(value = "applicationByCandidate", allEntries = true)
     })
     @Transactional
-    public JobApplicationResponseDTO applyToJob(Long jobId, String email, String coverLetter, MultipartFile cv) {
+    public JobApplicationResponseDTO applyToJob(Long jobId, String email, String coverLetter, MultipartFile resumeFile) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Applying to job - jobId={}, email={}", requestId, jobId, email);
         Job job = findJobById(jobId);
         User candidate = findUserByEmail(email);
         validateNoDuplicateApplication(job, candidate);
-        validateResume(cv);
-        String cvUrl = uploadCvToSupabase(cv, email, requestId);
-        JobApplication application = createAndSaveApplication(job, candidate, coverLetter, cvUrl);
+        validateResume(resumeFile);
+        String resumeUrl = uploadCvToSupabase(resumeFile, email, requestId);
+        Resume resume = createAndSameResume(resumeFile, resumeUrl);
+        JobApplication application = createAndSaveApplication(job, candidate, coverLetter, resume);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
         return jobApplicationMapper.toDto(application);
     }
@@ -145,23 +145,32 @@ public class JobApplicationService {
             throw new DuplicateApplicationException();
     }
 
-    private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter, String cvUrl) {
+    private Resume createAndSameResume(MultipartFile resumeFile, String resumeUrl) {
+        Resume resume = Resume.builder()
+                .title(resumeFile.getOriginalFilename())
+                .fileUrl(resumeUrl)
+//                .profile(candidate.getUserProfile()) TODO: implement later
+                .build();
+        return resumeRepository.save(resume);
+    }
+
+    private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter, Resume resumeFile) {
         JobApplication application = JobApplication.builder()
                 .job(job)
                 .candidate(candidate)
                 .status(ApplicationStatus.APPLIED)
                 .coverLetter(coverLetter)
-                .cvUrl(cvUrl)
+                .resume(resumeFile)
                 .build();
 
         return jobApplicationRepository.save(application);
     }
 
-    private void validateResume(MultipartFile cv) {
-        if (cv.isEmpty() || !Objects.equals(cv.getContentType(), "application/pdf")) {
+    private void validateResume(MultipartFile resumeFile) {
+        if (resumeFile.isEmpty() || !Objects.equals(resumeFile.getContentType(), "application/pdf")) {
             throw new IllegalArgumentException("CV must be a non-empty PDF file");
         }
-        if (cv.getSize() > ACCEPTABLE_FILE_SIZE) {
+        if (resumeFile.getSize() > ACCEPTABLE_FILE_SIZE) {
             throw new IllegalArgumentException("CV size exceeds 5MB limit");
         }
     }

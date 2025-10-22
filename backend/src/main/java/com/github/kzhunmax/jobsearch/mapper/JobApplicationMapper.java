@@ -12,6 +12,7 @@ public class JobApplicationMapper {
 
         var job = application.getJob();
         var candidate = application.getCandidate();
+        var resume = application.getResume();
 
         return new JobApplicationResponseDTO(
                 application.getId(),
@@ -22,7 +23,7 @@ public class JobApplicationMapper {
                 application.getStatus() != null ? application.getStatus().name() : null,
                 application.getAppliedAt() != null ? application.getAppliedAt().toString() : null,
                 application.getCoverLetter(),
-                application.getCvUrl()
+                resume != null ? resume.getFileUrl() : null
         );
     }
 }

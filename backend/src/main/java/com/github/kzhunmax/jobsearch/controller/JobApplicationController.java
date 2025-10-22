@@ -155,13 +155,13 @@ public class JobApplicationController {
             )
             @RequestPart("request") String requestJson,
             @Parameter(description = "CV file (PDF, max 5MB) - form part named 'cv'", required = true)
-            @RequestPart("cv") MultipartFile cv,
+            @RequestPart("resume") MultipartFile resume,
             Authentication authentication) {
         String email = authentication.getName();
         try {
             JobApplicationRequestDTO requestDto = objectMapper.readValue(requestJson, JobApplicationRequestDTO.class);
             log.info("User '{}' is applying to job with id={} | coverLetterLength={}", email, jobId, requestDto.coverLetter().length());
-            JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, email, requestDto.coverLetter(), cv);
+            JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, email, requestDto.coverLetter(), resume);
             log.info("User '{}' successfully applied to job id={} | applicationId={}", email, jobId, responseDto.id());
             return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
         } catch (Exception e) {

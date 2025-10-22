@@ -47,7 +47,7 @@ public record JobApplicationResponseDTO(
         @Schema(description = "Cover letter text", example = "I am very interested in this position because...")
         String coverLetter,
 
-        @Schema(description = "An url to candidate resume")
-        String cvUrl
+        @Schema(description = "An url to candidate resume", example = "https://supabase.com/storage/v1/object/public/resumes/user-resume.pdf")
+        String resumeUrl
 ) {
 }
