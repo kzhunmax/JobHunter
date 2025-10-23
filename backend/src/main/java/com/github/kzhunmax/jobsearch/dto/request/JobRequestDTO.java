@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
+
 
 @Schema(
         description = "Request to create or update a job posting",
@@ -63,6 +65,13 @@ public record JobRequestDTO(
         )
         @NotNull(message = "Salary is required")
         @Positive(message = "Salary must be positive")
-        Double salary
+        Double salary,
+
+        @Schema(
+                description = "Application dealine for current position"
+        )
+        @NotNull(message = "Deadline for applying is required")
+        LocalDate applicationDeadline
+
 ) {
 }

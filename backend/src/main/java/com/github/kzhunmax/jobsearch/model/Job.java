@@ -3,6 +3,7 @@ package com.github.kzhunmax.jobsearch.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,6 +33,9 @@ public class Job extends BaseEntity {
 
     @Column(nullable = false)
     private Double salary;
+
+    @Column(name = "application_deadline", nullable = false)
+    private LocalDate applicationDeadline;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "posted_by_id", nullable = false)

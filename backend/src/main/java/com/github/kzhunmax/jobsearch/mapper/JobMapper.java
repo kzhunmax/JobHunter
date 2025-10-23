@@ -18,6 +18,7 @@ public class JobMapper {
                 .company(dto.company())
                 .location(dto.location())
                 .salary(dto.salary())
+                .applicationDeadline(dto.applicationDeadline())
                 .active(true)
                 .postedBy(user)
                 .build();
@@ -33,6 +34,7 @@ public class JobMapper {
                 job.getCompany(),
                 job.getLocation(),
                 job.getSalary(),
+                job.getApplicationDeadline(),
                 job.isActive(),
                 job.getPostedBy() != null ? job.getPostedBy().getEmail() : null
         );

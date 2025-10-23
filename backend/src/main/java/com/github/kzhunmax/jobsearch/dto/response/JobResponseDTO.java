@@ -2,6 +2,8 @@ package com.github.kzhunmax.jobsearch.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDate;
+
 
 @Schema(
         description = "Job posting details response",
@@ -39,6 +41,9 @@ public record JobResponseDTO(
 
         @Schema(description = "Annual salary", example = "120000.0")
         Double salary,
+
+        @Schema(description = "Application deadline for current position")
+        LocalDate applicationDeadline,
 
         @Schema(description = "Whether the job posting is active", example = "true")
         boolean active,
