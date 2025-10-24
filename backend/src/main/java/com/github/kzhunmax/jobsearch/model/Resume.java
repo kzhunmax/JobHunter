@@ -12,6 +12,10 @@ import lombok.*;
 @Entity
 public class Resume extends BaseEntity {
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_profile_id", nullable = false)
+    private UserProfile userProfile;
+
     @Column(name = "title", nullable = false)
     private String title;
 
