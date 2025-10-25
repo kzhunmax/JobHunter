@@ -68,7 +68,7 @@ public class JobApplicationService {
         validateNoDuplicateApplication(job, candidate);
         validateResume(resumeFile);
         String resumeUrl = uploadCvToSupabase(resumeFile, email, requestId);
-        Resume resume = createAndSameResume(resumeFile, resumeUrl);
+        Resume resume = createAndSaveResume(resumeFile, resumeUrl);
         JobApplication application = createAndSaveApplication(job, candidate, coverLetter, resume);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
         return jobApplicationMapper.toDto(application);
@@ -145,7 +145,7 @@ public class JobApplicationService {
             throw new DuplicateApplicationException();
     }
 
-    private Resume createAndSameResume(MultipartFile resumeFile, String resumeUrl) {
+    private Resume createAndSaveResume(MultipartFile resumeFile, String resumeUrl) {
         Resume resume = Resume.builder()
                 .title(resumeFile.getOriginalFilename())
                 .fileUrl(resumeUrl)
