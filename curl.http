@@ -1,2 +1,0 @@
-curl -H "Authorization: Bearer <ACCESS_TOKEN>" \
-     https://api.linkedin.com/v2/me

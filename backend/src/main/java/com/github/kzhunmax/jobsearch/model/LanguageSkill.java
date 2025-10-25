@@ -14,8 +14,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class LanguageSkill extends BaseEntity {
 
-    @Column(name = "language", nullable = false, length = 50)
-    private String language;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "language", nullable = false, length = 30)
+    private Language language;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "level", nullable = false, length = 20)
