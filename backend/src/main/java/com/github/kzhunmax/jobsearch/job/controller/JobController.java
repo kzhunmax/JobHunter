@@ -3,9 +3,10 @@ package com.github.kzhunmax.jobsearch.job.controller;
 import com.github.kzhunmax.jobsearch.job.dto.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.job.model.es.JobDocument;
-import com.github.kzhunmax.jobsearch.payload.ApiResponse;
-import com.github.kzhunmax.jobsearch.job.service.search.JobSearchService;
 import com.github.kzhunmax.jobsearch.job.service.JobService;
+import com.github.kzhunmax.jobsearch.job.service.search.JobSearchService;
+import com.github.kzhunmax.jobsearch.payload.ApiResponse;
+import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,7 +25,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
@@ -121,13 +122,13 @@ public class JobController {
                     content = @Content(schema = @Schema(implementation = JobRequestDTO.class))
             )
             @Valid @RequestBody JobRequestDTO dto,
-            Authentication authentication
-    ) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+            ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        String email = authentication.getName();
-        log.info("Request [{}]: Creating job - email={}", requestId, email);
-        JobResponseDTO job = jobService.createJob(dto, email);
-        log.info("Request [{}]: Job created successfully - email={}", requestId, email);
+        Long userId = userDetails.getId();
+        log.info("Request [{}]: Creating job - userId={}", requestId, userId);
+        JobResponseDTO job = jobService.createJob(dto, userId);
+        log.info("Request [{}]: Job created successfully - userId={}", requestId, userId);
         return ApiResponse.created(job, requestId);
     }
 
@@ -481,14 +482,14 @@ public class JobController {
             )
     )
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> getMyJobs(
-            Authentication authentication,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PageableDefault(size = 20) Pageable pageable,
             PagedResourcesAssembler<JobResponseDTO> pagedAssembler) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        String email = authentication.getName();
-        log.info("Request [{}]: Getting my jobs - email={}, pageable={}", requestId, email, pageable);
-        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(email, pageable, pagedAssembler);
-        log.info("Request [{}]: My jobs retrieved successfully - email={}", requestId, email);
+        Long userId = userDetails.getId();
+        log.info("Request [{}]: Getting my jobs - userId={}, pageable={}", requestId, userId, pageable);
+        PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(userId, pageable, pagedAssembler);
+        log.info("Request [{}]: My jobs retrieved successfully - userId={}", requestId, userId);
         return ApiResponse.success(jobs, requestId);
     }
 

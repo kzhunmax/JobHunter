@@ -1,13 +1,13 @@
 package com.github.kzhunmax.jobsearch.security.oauth2;
 
 import com.github.kzhunmax.jobsearch.exception.OAuth2AuthenticationProcessingException;
+import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
+import com.github.kzhunmax.jobsearch.security.oauth2.user.OAuth2UserInfo;
+import com.github.kzhunmax.jobsearch.security.oauth2.user.OAuth2UserInfoFactory;
 import com.github.kzhunmax.jobsearch.shared.enums.AuthProvider;
 import com.github.kzhunmax.jobsearch.shared.enums.Role;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
-import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
-import com.github.kzhunmax.jobsearch.security.oauth2.user.OAuth2UserInfo;
-import com.github.kzhunmax.jobsearch.security.oauth2.user.OAuth2UserInfoFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.Optional;
 import java.util.Set;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
@@ -59,10 +58,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.debug("Request [{}]: OAuth2 user loaded - email={}", requestId, email);
 
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        User user;
-        if (optionalUser.isPresent()) {
-            user = optionalUser.get();
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
             if (!user.getProvider().name().equalsIgnoreCase(registrationId)) {
                 throw new OAuth2AuthenticationProcessingException("Looks like you're signed up with " +
                         user.getProvider() + " account. Please use it to login.");

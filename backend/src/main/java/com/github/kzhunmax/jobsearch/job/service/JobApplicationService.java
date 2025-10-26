@@ -1,19 +1,20 @@
 package com.github.kzhunmax.jobsearch.job.service;
 
-import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
 import com.github.kzhunmax.jobsearch.exception.DuplicateApplicationException;
 import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
+import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobApplicationMapper;
-import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
-import com.github.kzhunmax.jobsearch.user.model.Resume;
-import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
+import com.github.kzhunmax.jobsearch.user.model.Resume;
+import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.repository.ResumeRepository;
 import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -26,7 +27,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -64,14 +64,14 @@ public class JobApplicationService {
             @CacheEvict(value = "applicationByCandidate", allEntries = true)
     })
     @Transactional
-    public JobApplicationResponseDTO applyToJob(Long jobId, String email, String coverLetter, MultipartFile resumeFile) {
+    public JobApplicationResponseDTO applyToJob(Long jobId, Long userId, String coverLetter, MultipartFile resumeFile) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Applying to job - jobId={}, email={}", requestId, jobId, email);
+        log.info("Request [{}]: Applying to job - jobId={}, userId={}", requestId, jobId, userId);
         Job job = findJobById(jobId);
-        User candidate = findUserByEmail(email);
+        User candidate = findUserById(userId);
         validateNoDuplicateApplication(job, candidate);
         validateResume(resumeFile);
-        String resumeUrl = uploadCvToSupabase(resumeFile, email, requestId);
+        String resumeUrl = uploadCvToSupabase(resumeFile, userId, requestId);
         Resume resume = createAndSaveResume(resumeFile, resumeUrl);
         JobApplication application = createAndSaveApplication(job, candidate, coverLetter, resume);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
@@ -113,19 +113,19 @@ public class JobApplicationService {
         return jobApplicationMapper.toDto(savedApplication);
     }
 
-    @Cacheable(value = "applicationByCandidate", key = "{#email, #pageable}")
+    @Cacheable(value = "applicationByCandidate", key = "{#userId, #pageable}")
     @Transactional(readOnly = true)
     public PagedModel<EntityModel<JobApplicationResponseDTO>> getApplicationsByCandidate(
-            String email,
+            Long userId,
             Pageable pageable,
             PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching application by candidate - email={}, pageable={}", requestId, email, pageable);
-        User candidate = findUserByEmail(email);
+        log.info("Request [{}]: Fetching application by candidate - userId={}, pageable={}", requestId, userId, pageable);
+        User candidate = findUserById(userId);
         Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository.findByCandidate(candidate, pageable).map(jobApplicationMapper::toDto);
         long total = applicationPage.getTotalPages();
-        log.info("Request [{}]: Found {} applications for candidate - email={}", requestId, total, email);
+        log.info("Request [{}]: Found {} applications for candidate - userId={}", requestId, total, userId);
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
@@ -134,9 +134,9 @@ public class JobApplicationService {
                 .orElseThrow(() -> new JobNotFoundException(jobId));
     }
 
-    private User findUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+    private User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
     }
 
     private JobApplication findApplicationById(Long appId) {
@@ -179,12 +179,12 @@ public class JobApplicationService {
         }
     }
 
-    private String uploadCvToSupabase(MultipartFile cv, String email, String requestId) {
+    private String uploadCvToSupabase(MultipartFile cv, Long userId, String requestId) {
         try {
             String uuid = UUID.randomUUID().toString();
             String originalName = StringUtils.cleanPath(Objects.requireNonNull(cv.getOriginalFilename()));
             String fileName = uuid + "_" + StringUtils.getFilename(originalName);
-            String path = "candidates/" + email.replace('@', '_') + "/" + fileName;
+            String path = "candidates/" + userId + "/" + fileName;
 
             log.debug("Request [{}]: Uploading CV to Supabase S3 at path={}", requestId, path);
 
@@ -203,7 +203,7 @@ public class JobApplicationService {
             return publicUrl;
 
         } catch (Exception e) {
-            log.error("Request [{}]: Failed to upload CV to Supabase S3 for email={}", requestId, email, e);
+            log.error("Request [{}]: Failed to upload CV to Supabase S3 for userId={}", requestId, userId, e);
             throw new RuntimeException("CV upload to Supabase S3 failed: " + e.getMessage());
         }
     }

@@ -3,9 +3,10 @@ package com.github.kzhunmax.jobsearch.job.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
-import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
-import com.github.kzhunmax.jobsearch.payload.ApiResponse;
 import com.github.kzhunmax.jobsearch.job.service.JobApplicationService;
+import com.github.kzhunmax.jobsearch.payload.ApiResponse;
+import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
+import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,7 +24,7 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -156,16 +157,16 @@ public class JobApplicationController {
             @RequestPart("request") String requestJson,
             @Parameter(description = "CV file (PDF, max 5MB) - form part named 'cv'", required = true)
             @RequestPart("resume") MultipartFile resume,
-            Authentication authentication) {
-        String email = authentication.getName();
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        Long userId = userDetails.getId();
         try {
             JobApplicationRequestDTO requestDto = objectMapper.readValue(requestJson, JobApplicationRequestDTO.class);
-            log.info("User '{}' is applying to job with id={} | coverLetterLength={}", email, jobId, requestDto.coverLetter().length());
-            JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, email, requestDto.coverLetter(), resume);
-            log.info("User '{}' successfully applied to job id={} | applicationId={}", email, jobId, responseDto.id());
+            log.info("User '{}' is applying to job with id={} | coverLetterLength={}", userId, jobId, requestDto.coverLetter().length());
+            JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, userId, requestDto.coverLetter(), resume);
+            log.info("User '{}' successfully applied to job id={} | applicationId={}", userId, jobId, responseDto.id());
             return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
         } catch (Exception e) {
-            log.error("Failed to parse request JSON for user {}: {}", email, e.getMessage());
+            log.error("Failed to parse request JSON for user {}: {}", userId, e.getMessage());
             throw new IllegalArgumentException("Invalid JSON in request part: " + e.getMessage());
         }
     }
@@ -329,19 +330,19 @@ public class JobApplicationController {
             )
     )
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobApplicationResponseDTO>>>> getMyApplications(
-            Authentication authentication,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             Pageable pageable,
             PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        String email = authentication.getName();
-        log.info("Request [{}]: Fetching applications for candidate='{}' with pageable={}", requestId, email, pageable);
-        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(email, pageable, pagedAssembler);
+        Long userId = userDetails.getId();
+        log.info("Request [{}]: Fetching applications for candidate='{}' with pageable={}", requestId, userId, pageable);
+        PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(userId, pageable, pagedAssembler);
         int total = applications.getMetadata() != null
                 ? (int) applications.getMetadata().getTotalElements()
                 : applications.getContent().size();
 
-        log.info("Request [{}]: Found {} applications for candidate='{}'", requestId, total, email);
+        log.info("Request [{}]: Found {} applications for candidate='{}'", requestId, total, userId);
         return ApiResponse.success(applications, requestId);
     }
 
