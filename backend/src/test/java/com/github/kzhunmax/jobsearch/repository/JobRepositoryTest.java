@@ -1,7 +1,9 @@
 package com.github.kzhunmax.jobsearch.repository;
 
-import com.github.kzhunmax.jobsearch.model.Job;
-import com.github.kzhunmax.jobsearch.model.User;
+import com.github.kzhunmax.jobsearch.job.model.Job;
+import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.user.model.User;
+import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.util.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

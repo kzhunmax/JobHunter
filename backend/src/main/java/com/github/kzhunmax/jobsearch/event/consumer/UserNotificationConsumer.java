@@ -1,8 +1,8 @@
 package com.github.kzhunmax.jobsearch.event.consumer;
 
-import com.github.kzhunmax.jobsearch.model.event.EventType;
-import com.github.kzhunmax.jobsearch.model.event.UserEvent;
-import com.github.kzhunmax.jobsearch.service.EmailService;
+import com.github.kzhunmax.jobsearch.shared.event.EventType;
+import com.github.kzhunmax.jobsearch.shared.event.UserEvent;
+import com.github.kzhunmax.jobsearch.shared.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

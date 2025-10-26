@@ -1,10 +1,10 @@
 package com.github.kzhunmax.jobsearch.security.oauth2;
 
 import com.github.kzhunmax.jobsearch.exception.OAuth2AuthenticationProcessingException;
-import com.github.kzhunmax.jobsearch.model.AuthProvider;
-import com.github.kzhunmax.jobsearch.model.Role;
-import com.github.kzhunmax.jobsearch.model.User;
-import com.github.kzhunmax.jobsearch.repository.UserRepository;
+import com.github.kzhunmax.jobsearch.shared.enums.AuthProvider;
+import com.github.kzhunmax.jobsearch.shared.enums.Role;
+import com.github.kzhunmax.jobsearch.user.model.User;
+import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
 import com.github.kzhunmax.jobsearch.security.oauth2.user.OAuth2UserInfo;
 import com.github.kzhunmax.jobsearch.security.oauth2.user.OAuth2UserInfoFactory;

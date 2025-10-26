@@ -2,11 +2,11 @@ package com.github.kzhunmax.jobsearch.security;
 
 import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
 import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
-import com.github.kzhunmax.jobsearch.model.ApplicationStatus;
-import com.github.kzhunmax.jobsearch.model.Job;
-import com.github.kzhunmax.jobsearch.model.JobApplication;
-import com.github.kzhunmax.jobsearch.repository.JobApplicationRepository;
-import com.github.kzhunmax.jobsearch.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
+import com.github.kzhunmax.jobsearch.job.model.Job;
+import com.github.kzhunmax.jobsearch.job.model.JobApplication;
+import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
+import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;

@@ -1,6 +1,6 @@
 package com.github.kzhunmax.jobsearch.event.producer;
 
-import com.github.kzhunmax.jobsearch.model.event.UserEvent;
+import com.github.kzhunmax.jobsearch.shared.event.UserEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

@@ -1,7 +1,7 @@
 package com.github.kzhunmax.jobsearch.security;
 
-import com.github.kzhunmax.jobsearch.model.Role;
-import com.github.kzhunmax.jobsearch.model.User;
+import com.github.kzhunmax.jobsearch.shared.enums.Role;
+import com.github.kzhunmax.jobsearch.user.model.User;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;

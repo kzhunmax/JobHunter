@@ -1,7 +1,7 @@
 package com.github.kzhunmax.jobsearch.security;
 
-import com.github.kzhunmax.jobsearch.model.User;
-import com.github.kzhunmax.jobsearch.repository.UserRepository;
+import com.github.kzhunmax.jobsearch.user.model.User;
+import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

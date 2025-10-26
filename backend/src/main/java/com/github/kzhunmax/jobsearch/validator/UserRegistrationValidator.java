@@ -1,8 +1,8 @@
 package com.github.kzhunmax.jobsearch.validator;
 
-import com.github.kzhunmax.jobsearch.dto.request.UserRegistrationDTO;
+import com.github.kzhunmax.jobsearch.user.dto.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.exception.EmailExistsException;
-import com.github.kzhunmax.jobsearch.repository.UserRepository;
+import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

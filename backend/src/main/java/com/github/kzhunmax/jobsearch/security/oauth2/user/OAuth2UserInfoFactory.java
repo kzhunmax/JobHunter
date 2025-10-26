@@ -1,7 +1,7 @@
 package com.github.kzhunmax.jobsearch.security.oauth2.user;
 
 import com.github.kzhunmax.jobsearch.exception.OAuth2AuthenticationProcessingException;
-import com.github.kzhunmax.jobsearch.model.AuthProvider;
+import com.github.kzhunmax.jobsearch.shared.enums.AuthProvider;
 
 import java.util.Map;
 

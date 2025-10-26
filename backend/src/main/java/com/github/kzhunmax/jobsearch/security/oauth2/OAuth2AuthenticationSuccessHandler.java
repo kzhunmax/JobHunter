@@ -2,7 +2,7 @@ package com.github.kzhunmax.jobsearch.security.oauth2;
 
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
-import com.github.kzhunmax.jobsearch.service.CookieService;
+import com.github.kzhunmax.jobsearch.shared.CookieService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
