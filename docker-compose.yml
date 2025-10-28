@@ -44,7 +44,7 @@ services:
       - .env
 
   db:
-    image: postgres:17.6-alpine
+    image: postgres:18-alpine
     container_name: db
     environment:
       POSTGRES_DB: ${DB_NAME}
