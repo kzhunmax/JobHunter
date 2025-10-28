@@ -2,52 +2,34 @@ package com.github.kzhunmax.jobsearch.job.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(
-        description = "Job application details response",
-        example = """
-        {
-            "id": 123,
-            "jobId": 123,
-            "jobTitle": "Java Developer",
-            "company": "BigTech",
-            "candidateEmail": "user@example.com",
-            "status": "APPLIED",
-            "appliedAt": "2025-09-15T10:30:00Z",
-            "coverLetter": "I am very interested in this position because...",
-        }
-        """
-)
+@Schema(description = "Job application details response")
 public record JobApplicationResponseDTO(
 
-        @Schema(description = "Unique application identifier", example = "123")
+        @Schema(description = "Unique application identifier")
         Long id,
 
-        @Schema(description = "ID of the applied job", example = "123")
+        @Schema(description = "ID of the applied job")
         Long jobId,
 
-        @Schema(description = "Title of the job position", example = "Java Developer")
+        @Schema(description = "Title of the job position")
         String jobTitle,
 
-        @Schema(description = "Company offering the job", example = "BigTech")
+        @Schema(description = "Company offering the job")
         String company,
 
-        @Schema(description = "Email of the applicant", example = "user@example.com")
+        @Schema(description = "Email of the applicant")
         String candidateEmail,
 
-        @Schema(
-                description = "Current application status",
-                example = "APPLIED",
-                allowableValues = {"APPLIED", "UNDER_REVIEW", "INTERVIEWED", "REJECTED", "OFFERED", "ACCEPTED"}
-        )
+        @Schema(description = "Current application status", allowableValues = {"APPLIED", "UNDER_REVIEW", "INTERVIEWED", "REJECTED", "OFFERED", "ACCEPTED"})
         String status,
 
-        @Schema(description = "When the application was submitted", example = "2025-09-15T10:30:00Z")
+        @Schema(description = "When the application was submitted")
         String appliedAt,
 
-        @Schema(description = "Cover letter text", example = "I am very interested in this position because...")
+        @Schema(description = "Cover letter text")
         String coverLetter,
 
-        @Schema(description = "An url to candidate resume", example = "https://supabase.com/storage/v1/object/public/resumes/user-resume.pdf")
+        @Schema(description = "An url to candidate resume")
         String resumeUrl
 ) {
 }

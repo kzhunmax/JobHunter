@@ -5,50 +5,34 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
 
-@Schema(
-        description = "Job posting details response",
-        example = """
-                {
-                    "id": 1,
-                    "title": "Java Developer",
-                    "description": "Looking for experienced Java developer...",
-                    "company": "BigTech",
-                    "location": "Remote",
-                    "salary": 120000.0,
-                    "active": true,
-                    "postedBy": "recruiter@example.com",
-                    "createdAt": "2025-09-15T10:30:00",
-                    "updatedAt": "2025-09-15T10:30:00"
-                }
-                """
-)
+@Schema(description = "Job posting details response")
 public record JobResponseDTO(
 
-        @Schema(description = "Unique job identifier", example = "1")
+        @Schema(description = "Unique job identifier")
         Long id,
 
-        @Schema(description = "Job title position", example = "Java Developer")
+        @Schema(description = "Job title position")
         String title,
 
-        @Schema(description = "Detailed job description", example = "Looking for experienced Java developer...")
+        @Schema(description = "Detailed job description")
         String description,
 
-        @Schema(description = "Company name", example = "BigTech")
+        @Schema(description = "Company name")
         String company,
 
-        @Schema(description = "Job location", example = "Remote")
+        @Schema(description = "Job location")
         String location,
 
-        @Schema(description = "Annual salary", example = "120000.0")
+        @Schema(description = "Annual salary")
         Double salary,
 
         @Schema(description = "Application deadline for current position")
         LocalDate applicationDeadline,
 
-        @Schema(description = "Whether the job posting is active", example = "true")
+        @Schema(description = "Whether the job posting is active")
         boolean active,
 
-        @Schema(description = "Email of the user who posted the job", example = "recruiter@example.com")
+        @Schema(description = "Email of the user who posted the job")
         String postedBy
 ) {
 }

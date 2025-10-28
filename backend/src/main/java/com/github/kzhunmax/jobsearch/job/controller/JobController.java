@@ -10,7 +10,6 @@ import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +22,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -40,7 +40,7 @@ public class JobController {
     private final JobSearchService jobSearchService;
 
     @PreAuthorize("hasRole('RECRUITER')")
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Create a new job posting",
             description = "Create a new job vacancy (recruiters only)"
@@ -49,69 +49,22 @@ public class JobController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
                     description = "Job created successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": {
-                                                "id": 1,
-                                                "title": "Java Developer",
-                                                "description": "Looking for experienced Java developer with Spring Boot knowledge",
-                                                "company": "TechCorp",
-                                                "location": "Remote",
-                                                "salary": 1020000,
-                                                "active": true,
-                                                "postedBy": "recruiter@example.com"
-                                              },
-                                              "errors": [],
-                                              "timestamp": "2025-09-29T20:00:28.786132065Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
-                    )
+                    useReturnTypeSchema = true
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "Invalid job data",
                     content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": null,
-                                              "errors": [
-                                                {
-                                                  "code": "VALIDATION_FAILED",
-                                                  "message": "Validation failed"
-                                                }
-                                              ],
-                                              "timestamp": "2025-10-01T19:48:47.010535588Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
                     description = "Access denied - recruiter role required",
                     content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "timestamp": "2025-10-01T19:50:53.258+00:00",
-                                              "status": 403,
-                                              "error": "Forbidden",
-                                              "path": "/api/jobs"
-                                            }
-                                            """
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
                     )
             )
     })
@@ -132,66 +85,18 @@ public class JobController {
         return ApiResponse.created(job, requestId);
     }
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "List all active jobs",
             description = "Get paginated list of all active job postings"
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "Jobs retrieved successfully",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ApiResponse.class),
-                    examples = @ExampleObject(
-                            value = """
-                                    {
-                                      "data": {
-                                        "links": [
-                                          {
-                                            "rel": "self",
-                                            "href": "http://localhost:8080/api/jobs?page=0&size=20&sort=createdAt,asc"
-                                          }
-                                        ],
-                                        "content": [
-                                          {
-                                            "id": 1,
-                                            "title": "Java Developer",
-                                            "description": "Looking for experienced Java developer with Spring Boot knowledge",
-                                            "company": "TechCorp",
-                                            "location": "Remote",
-                                            "salary": 1020000,
-                                            "active": true,
-                                            "postedBy": "recruiter@example.com",
-                                            "links": []
-                                          },
-                                          {
-                                            "id": 2,
-                                            "title": "Java Developer",
-                                            "description": "Looking for experienced Java developer with Spring Boot knowledge",
-                                            "company": "TechCorp",
-                                            "location": "Remote",
-                                            "salary": 1020000,
-                                            "active": true,
-                                            "postedBy": "recruiter@example.com",
-                                            "links": []
-                                          }
-                                        ],
-                                        "page": {
-                                          "size": 20,
-                                          "totalElements": 2,
-                                          "totalPages": 1,
-                                          "number": 0
-                                        }
-                                      },
-                                      "errors": [],
-                                      "timestamp": "2025-10-01T20:11:13.869231411Z",
-                                      "requestId": "request-123"
-                                    }
-                                    """
-                    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Jobs retrieved successfully",
+                    useReturnTypeSchema = true
             )
-    )
+    })
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> listJobs(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
             PagedResourcesAssembler<JobResponseDTO> pagedAssembler
@@ -203,7 +108,7 @@ public class JobController {
         return ApiResponse.success(jobs, requestId);
     }
 
-    @GetMapping("/{jobId}")
+    @GetMapping(value = "/{jobId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Get job by ID",
             description = "Retrieve detailed information about a specific job"
@@ -212,51 +117,14 @@ public class JobController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "Job found successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": {
-                                                "id": 1,
-                                                "title": "Java Developer",
-                                                "description": "Looking for experienced Java developer with Spring Boot knowledge",
-                                                "company": "TechCorp",
-                                                "location": "Remote",
-                                                "salary": 1020000,
-                                                "active": true,
-                                                "postedBy": "recruiter@example.com"
-                                              },
-                                              "errors": [],
-                                              "timestamp": "2025-10-01T20:15:54.924550574Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
-                    )
+                    useReturnTypeSchema = true
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "Job not found",
                     content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": null,
-                                              "errors": [
-                                                {
-                                                  "code": "JOB_NOT_FOUND",
-                                                  "message": "Job with id -1 not found"
-                                                }
-                                              ],
-                                              "timestamp": "2025-09-22T10:15:30Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
                     )
             )
     })
@@ -271,7 +139,7 @@ public class JobController {
     }
 
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication)")
-    @PutMapping("/{jobId}")
+    @PutMapping(value = "/{jobId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Update job posting",
             description = "Update an existing job posting (job owner only)"
@@ -280,69 +148,22 @@ public class JobController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "Job updated successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": {
-                                                "id": 1,
-                                                "title": "Python Developer",
-                                                "description": "Updated description with more requirements",
-                                                "company": "TechCorp Inc",
-                                                "location": "Hybrid",
-                                                "salary": 130000,
-                                                "active": true,
-                                                "postedBy": "recruiter@example.com"
-                                              },
-                                              "errors": [],
-                                              "timestamp": "2025-10-01T20:17:27.613225110Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
-                    )
+                    useReturnTypeSchema = true
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
                     description = "Access denied - not the job owner",
                     content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "timestamp": "2025-10-01T20:18:44.815+00:00",
-                                              "status": 403,
-                                              "error": "Forbidden",
-                                              "path": "/api/jobs/1"
-                                            }
-                                            """
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "Job not found",
                     content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": null,
-                                              "errors": [
-                                                {
-                                                  "code": "JOB_NOT_FOUND",
-                                                  "message": "Job with id -1 not found"
-                                                }
-                                              ],
-                                              "timestamp": "2025-10-01T20:16:50.059555085Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
                     )
             )
     })
@@ -372,17 +193,13 @@ public class JobController {
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "204",
-                    description = "Job deleted successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class)
-                    )
+                    description = "Job deleted successfully"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
                     description = "Access denied - not the job owner",
                     content = @Content(
-                            mediaType = "application/json",
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ApiResponse.class)
                     )
             ),
@@ -390,23 +207,8 @@ public class JobController {
                     responseCode = "404",
                     description = "Job not found",
                     content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                              "data": null,
-                                              "errors": [
-                                                {
-                                                  "code": "JOB_NOT_FOUND",
-                                                  "message": "Job with id -1 not found"
-                                                }
-                                              ],
-                                              "timestamp": "2025-10-01T20:16:50.059555085Z",
-                                              "requestId": "request-123"
-                                            }
-                                            """
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
                     )
             )
     })
@@ -421,7 +223,7 @@ public class JobController {
     }
 
     @PreAuthorize("hasRole('RECRUITER')")
-    @GetMapping("/my-jobs")
+    @GetMapping(value = "/my-jobs", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Get my job postings",
             description = "Retrieve all job postings created by the current recruiter"
@@ -429,57 +231,7 @@ public class JobController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "Jobs retrieved successfully",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ApiResponse.class),
-                    examples = @ExampleObject(
-                            value = """
-                                    {
-                                      "data": {
-                                        "links": [
-                                          {
-                                            "rel": "self",
-                                            "href": "http://localhost:8080/api/jobs?page=0&size=20&sort=createdAt,asc"
-                                          }
-                                        ],
-                                        "content": [
-                                          {
-                                            "id": 1,
-                                            "title": "Java Developer",
-                                            "description": "Looking for experienced Java developer with Spring Boot knowledge",
-                                            "company": "TechCorp",
-                                            "location": "Remote",
-                                            "salary": 1020000,
-                                            "active": true,
-                                            "postedBy": "recruiter@example.com",
-                                            "links": []
-                                          },
-                                          {
-                                            "id": 2,
-                                            "title": "Java Developer",
-                                            "description": "Looking for experienced Java developer with Spring Boot knowledge",
-                                            "company": "TechCorp",
-                                            "location": "Remote",
-                                            "salary": 1020000,
-                                            "active": true,
-                                            "postedBy": "recruiter@example.com",
-                                            "links": []
-                                          }
-                                        ],
-                                        "page": {
-                                          "size": 20,
-                                          "totalElements": 2,
-                                          "totalPages": 1,
-                                          "number": 0
-                                        }
-                                      },
-                                      "errors": [],
-                                      "timestamp": "2025-10-01T20:11:13.869231411Z",
-                                      "requestId": "request-123"
-                                    }
-                                    """
-                    )
-            )
+            useReturnTypeSchema = true
     )
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobResponseDTO>>>> getMyJobs(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -493,7 +245,7 @@ public class JobController {
         return ApiResponse.success(jobs, requestId);
     }
 
-    @GetMapping("/search")
+    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Search jobs by query",
             description = "Search active jobs by keyword in title/description, optionally filtered by location/company"
@@ -502,10 +254,7 @@ public class JobController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "Search results retrieved",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = JobDocument.class)
-                    )
+                    useReturnTypeSchema = true
             )
     })
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobDocument>>>> searchJobs(

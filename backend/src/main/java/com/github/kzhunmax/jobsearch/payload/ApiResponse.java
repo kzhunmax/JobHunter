@@ -11,25 +11,25 @@ import java.util.List;
 @Schema(description = "Standard API response wrapper with consistent structure")
 public record ApiResponse<T>(
 
-        @Schema(description = "The actual response payload", nullable = true, example = "{\"id\": 1, \"username\": \"user\"}")
+        @Schema(description = "The actual response payload", nullable = true)
         T data,
 
         @Schema(description = "List actual response payload", nullable = true)
         List<ErrorDetails> errors,
 
-        @Schema(description = "Server-side timestamp of response creation", example = "2025-09-22T10:15:30Z")
+        @Schema(description = "Server-side timestamp of response creation")
         Instant timestamp,
 
-        @Schema(description = "Error details for failed requests", example = "request-123")
+        @Schema(description = "Error details for failed requests")
         String requestId
 ) {
     @Schema(description = "Error details structure")
     public record ErrorDetails(
 
-            @Schema(description = "Machine-readable error code", example = "VALIDATION_ERROR")
+            @Schema(description = "Machine-readable error code")
             String code,
 
-            @Schema(description = "Human-readable error message", example = "Email must be valid")
+            @Schema(description = "Human-readable error message")
             String message
     ) {}
 

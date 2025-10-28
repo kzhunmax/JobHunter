@@ -65,7 +65,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                         user.getProvider() + " account. Please use it to login.");
             }
             log.info("Request [{}]: Found existing user for OAuth2 - email={}", requestId, email);
-//            user = updateExistingUser(user, userInfo); TODO: Implement
         } else {
             log.info("Request [{}]: Creating new user for OAuth2 - email={}", requestId, email);
             user = registerNewUser(request, userInfo);
@@ -83,11 +82,4 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .build();
         return userRepository.save(newUser);
     }
-
-    // TODO: Implement UserProfile and ability to updateExistingUser details like Name, PictureUrl
-//    private User updateExistingUser(UserProfile existingUser, OAuth2UserInfo userInfo) {
-//        existingUser.setName(userInfo.getName());
-//        existingUser.setImageUrl(userInfo.getImageUrl());
-//        return userProfileRepository.save(existingUser);
-//    }
 }
