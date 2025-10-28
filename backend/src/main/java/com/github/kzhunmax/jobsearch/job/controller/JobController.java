@@ -193,7 +193,8 @@ public class JobController {
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "204",
-                    description = "Job deleted successfully"
+                    description = "Job deleted successfully",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",

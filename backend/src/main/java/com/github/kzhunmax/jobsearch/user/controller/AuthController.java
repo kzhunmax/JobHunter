@@ -9,6 +9,7 @@ import com.github.kzhunmax.jobsearch.user.dto.UserResponseDTO;
 import com.github.kzhunmax.jobsearch.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -160,7 +161,7 @@ public class AuthController {
                     required = true,
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            examples = @ExampleObject(
                                     value = "{\"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"}"
                             )
                     )

@@ -9,11 +9,5 @@ CREATE TABLE language_skills
     CONSTRAINT pk_language_skills PRIMARY KEY (id)
 );
 
-ALTER TABLE user_profiles
-    ADD COLUMN language_id BIGINT;
-
-ALTER TABLE user_profiles
-    ALTER COLUMN language_id SET NOT NULL;
-
 ALTER TABLE language_skills
     ADD CONSTRAINT FK_LANGUAGE_SKILLS_ON_USER_PROFILE FOREIGN KEY (user_profile_id) REFERENCES user_profiles (id);
