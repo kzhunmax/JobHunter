@@ -3,6 +3,7 @@ package com.github.kzhunmax.jobsearch.job.service;
 import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
 import com.github.kzhunmax.jobsearch.exception.DuplicateApplicationException;
 import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
+import com.github.kzhunmax.jobsearch.exception.UserProfileNotFound;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobApplicationMapper;
 import com.github.kzhunmax.jobsearch.job.model.Job;
@@ -12,7 +13,9 @@ import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.user.model.Resume;
 import com.github.kzhunmax.jobsearch.user.model.User;
+import com.github.kzhunmax.jobsearch.user.model.UserProfile;
 import com.github.kzhunmax.jobsearch.user.repository.ResumeRepository;
+import com.github.kzhunmax.jobsearch.user.repository.UserProfileRepository;
 import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +52,7 @@ public class JobApplicationService {
     private final UserRepository userRepository;
     private final ResumeRepository resumeRepository;
     private final JobApplicationMapper jobApplicationMapper;
+    private final UserProfileRepository userProfileRepository;
     private final S3Client s3Client;
 
     @Value("${supabase.url}")
@@ -69,10 +73,11 @@ public class JobApplicationService {
         log.info("Request [{}]: Applying to job - jobId={}, userId={}", requestId, jobId, userId);
         Job job = findJobById(jobId);
         User candidate = findUserById(userId);
+        UserProfile candidateProfile = findUserProfileByUserId(userId);
         validateNoDuplicateApplication(job, candidate);
         validateResume(resumeFile);
         String resumeUrl = uploadCvToSupabase(resumeFile, userId, requestId);
-        Resume resume = createAndSaveResume(resumeFile, resumeUrl);
+        Resume resume = createAndSaveResume(resumeFile, resumeUrl, candidateProfile);
         JobApplication application = createAndSaveApplication(job, candidate, coverLetter, resume);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
         return jobApplicationMapper.toDto(application);
@@ -134,6 +139,11 @@ public class JobApplicationService {
                 .orElseThrow(() -> new JobNotFoundException(jobId));
     }
 
+    private UserProfile findUserProfileByUserId(Long userId) {
+        return userProfileRepository.findById(userId)
+                .orElseThrow(() -> new UserProfileNotFound(userId));
+    }
+
     private User findUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
@@ -149,11 +159,11 @@ public class JobApplicationService {
             throw new DuplicateApplicationException();
     }
 
-    private Resume createAndSaveResume(MultipartFile resumeFile, String resumeUrl) {
+    private Resume createAndSaveResume(MultipartFile resumeFile, String resumeUrl, UserProfile userProfile) {
         Resume resume = Resume.builder()
                 .title(resumeFile.getOriginalFilename())
                 .fileUrl(resumeUrl)
-//                .profile(candidate.getUserProfile()) TODO: implement later
+                .userProfile(userProfile)
                 .build();
         return resumeRepository.save(resume);
     }
