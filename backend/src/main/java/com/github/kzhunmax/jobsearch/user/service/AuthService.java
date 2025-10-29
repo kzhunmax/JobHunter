@@ -1,25 +1,24 @@
 package com.github.kzhunmax.jobsearch.user.service;
 
-import com.github.kzhunmax.jobsearch.user.dto.UserRegistrationDTO;
-import com.github.kzhunmax.jobsearch.user.dto.JwtResponse;
-import com.github.kzhunmax.jobsearch.user.dto.UserResponseDTO;
 import com.github.kzhunmax.jobsearch.event.producer.UserEventProducer;
-import com.github.kzhunmax.jobsearch.exception.ApiException;
-import com.github.kzhunmax.jobsearch.user.mapper.UserMapper;
-import com.github.kzhunmax.jobsearch.shared.enums.Role;
-import com.github.kzhunmax.jobsearch.user.model.User;
-import com.github.kzhunmax.jobsearch.shared.event.EventType;
-import com.github.kzhunmax.jobsearch.shared.event.UserEvent;
-import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
+import com.github.kzhunmax.jobsearch.exception.InvalidOrExpiredTokenException;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.shared.CookieService;
+import com.github.kzhunmax.jobsearch.shared.enums.Role;
+import com.github.kzhunmax.jobsearch.shared.event.EventType;
+import com.github.kzhunmax.jobsearch.shared.event.UserEvent;
+import com.github.kzhunmax.jobsearch.user.dto.JwtResponse;
+import com.github.kzhunmax.jobsearch.user.dto.UserRegistrationDTO;
+import com.github.kzhunmax.jobsearch.user.dto.UserResponseDTO;
+import com.github.kzhunmax.jobsearch.user.mapper.UserMapper;
+import com.github.kzhunmax.jobsearch.user.model.User;
+import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.user.validator.UserRegistrationValidator;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,7 +72,7 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
         if (!jwtService.isTokenValid(refreshToken, userDetails)) {
-            throw new ApiException("Refresh token is invalid or expired", HttpStatus.UNAUTHORIZED, "INVALID_REFRESH");
+            throw new InvalidOrExpiredTokenException();
         }
         log.info("Request [{}]: Tokens refreshed successfully - email={}", requestId, email);
         return issueTokens(userDetails, response);

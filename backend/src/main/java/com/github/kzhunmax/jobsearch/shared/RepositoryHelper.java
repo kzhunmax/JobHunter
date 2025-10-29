@@ -1,17 +1,16 @@
 package com.github.kzhunmax.jobsearch.shared;
 
-import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
-import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
-import com.github.kzhunmax.jobsearch.exception.UserProfileNotFound;
+import com.github.kzhunmax.jobsearch.exception.*;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.user.model.Resume;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.model.UserProfile;
+import com.github.kzhunmax.jobsearch.user.repository.ResumeRepository;
 import com.github.kzhunmax.jobsearch.user.repository.UserProfileRepository;
 import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -23,10 +22,11 @@ public class RepositoryHelper {
     private final JobRepository jobRepository;
     private final UserProfileRepository userProfileRepository;
     private final JobApplicationRepository jobApplicationRepository;
+    private final ResumeRepository resumeRepository;
 
     public User findUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+                .orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     public UserProfile findUserProfileByUserId(Long userId) {
@@ -42,5 +42,10 @@ public class RepositoryHelper {
     public Job findJobById(Long jobId) {
         return jobRepository.findById(jobId)
                 .orElseThrow(() -> new JobNotFoundException(jobId));
+    }
+
+    public Resume findResumeById(Long resumeId) {
+        return resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResumeNotFoundException(resumeId));
     }
 }
