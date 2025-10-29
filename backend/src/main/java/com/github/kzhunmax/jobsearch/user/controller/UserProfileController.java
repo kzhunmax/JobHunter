@@ -6,6 +6,7 @@ import com.github.kzhunmax.jobsearch.user.dto.UserProfileRequestDTO;
 import com.github.kzhunmax.jobsearch.user.dto.UserProfileResponseDTO;
 import com.github.kzhunmax.jobsearch.user.service.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -18,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -87,5 +89,100 @@ public class UserProfileController {
         UserProfileResponseDTO profile = userProfileService.createProfile(requestDTO, userId);
         log.info("Request [{}]: User profile created successfully - userId={}", requestId, userId);
         return ApiResponse.created(profile, requestId);
+    }
+
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Update user profile")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "User profile updated successfully",
+                    useReturnTypeSchema = true
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid user profile data",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "User profile not found",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<ApiResponse<UserProfileResponseDTO>> updateProfile(
+            @Valid @RequestBody UserProfileRequestDTO requestDTO,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        Long userId = userDetails.getId();
+        log.info("Request [{}]: Updating profile for user='{}'", requestId, userId);
+        UserProfileResponseDTO updatedProfile = userProfileService.updateProfile(requestDTO, userId);
+        log.info("Request [{}]: User profile updated successfully - userId={}", requestId, userId);
+        return ApiResponse.success(updatedProfile, requestId);
+    }
+
+    @DeleteMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete user profile")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "204",
+                    description = "User profile deleted successfully",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "User profile not found",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<ApiResponse<Void>> deleteProfile(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        Long userId = userDetails.getId();
+        log.info("Request [{}]: Deleting profile for user='{}'", requestId, userId);
+        userProfileService.deleteProfile(userId);
+        log.info("Request [{}]: User profile deleted successfully - userId={}", requestId, userId);
+        return ApiResponse.noContent(requestId);
+    }
+
+    @PostMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Upload profile photo")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Photo uploaded successfully, returns public URL",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = String.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid file (e.g., too large, wrong type)",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<ApiResponse<String>> uploadPhoto(
+            @Parameter(description = "Image of type PNG, JPG with max size 2MB", required = true)
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        Long userId = userDetails.getId();
+        log.info("Request [{}]: Uploading profile photo for user='{}'", requestId, userId);
+        String photoUrl = userProfileService.uploadProfilePhoto(file, userId);
+        log.info("Request [{}]: Profile photo uploaded successfully for user='{}' - url={}", requestId, userId, photoUrl);
+        return ApiResponse.success(photoUrl, requestId);
     }
 }

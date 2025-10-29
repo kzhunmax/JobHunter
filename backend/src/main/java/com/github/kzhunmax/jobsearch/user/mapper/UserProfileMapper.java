@@ -11,7 +11,6 @@ import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", uses = {LanguageSkillMapper.class, ResumeMapper.class})
 public abstract class UserProfileMapper {
@@ -29,6 +28,16 @@ public abstract class UserProfileMapper {
     @Mapping(target = "user", source = "user")
     public abstract UserProfile toEntity(UserProfileRequestDTO dto, User user);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "resumes", ignore = true)
+    @Mapping(target = "languages", ignore = true)
+    @Mapping(target = "activityStatus", ignore = true)
+    @Mapping(target = "profileType", ignore = true)
+    @Mapping(target = "photoUrl", ignore = true)
+    public abstract void updateEntityFromDto(UserProfileRequestDTO dto, @MappingTarget UserProfile userProfile);
 
     public abstract UserProfileResponseDTO toDto(UserProfile userProfile);
 
@@ -40,17 +49,25 @@ public abstract class UserProfileMapper {
         return ProfileType.CANDIDATE;
     }
 
-    /*
-    // After mapping DTO -> Entity, manually map the languages list
-    // because MapStruct needs the 'profile' instance for the LanguageSkillMapper.toEntity method
-    */
     @AfterMapping
     protected void afterToEntity(@MappingTarget UserProfile profile, UserProfileRequestDTO dto) {
+        if (profile.getId() == null) {
+            mapLanguages(profile, dto);
+        }
+    }
+
+    @AfterMapping
+    protected void afterUpdateEntityFromDto(@MappingTarget UserProfile profile, UserProfileRequestDTO dto) {
+        profile.getLanguages().clear();
+        mapLanguages(profile, dto);
+    }
+
+    private void mapLanguages(UserProfile profile, UserProfileRequestDTO dto) {
         if (dto.languages() != null && !dto.languages().isEmpty()) {
             List<LanguageSkill> languageSkills = dto.languages().stream()
                     .map(langDto -> languageSkillMapper.toEntity(langDto, profile))
-                    .collect(Collectors.toList());
-            profile.setLanguages(languageSkills);
+                    .toList();
+            profile.getLanguages().addAll(languageSkills);
         }
     }
 }

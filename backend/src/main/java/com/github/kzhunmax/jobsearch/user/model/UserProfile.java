@@ -57,9 +57,11 @@ public class UserProfile extends BaseEntity {
 
     private String portfolioUrl;
 
+    @Builder.Default
     @OneToMany(mappedBy = "userProfile", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Resume> resumes = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "userProfile", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LanguageSkill> languages = new ArrayList<>();
 

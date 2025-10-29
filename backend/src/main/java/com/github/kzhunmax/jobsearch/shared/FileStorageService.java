@@ -1,4 +1,4 @@
-package com.github.kzhunmax.jobsearch.job.service;
+package com.github.kzhunmax.jobsearch.shared;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,23 +26,23 @@ public class FileStorageService {
     @Value("${supabase.bucket:resumes}")
     private String supabaseBucket;
 
-    public String uploadResumeToSupabase(MultipartFile resume, Long userId, String requestId) {
+    public String uploadFileToSupabase(MultipartFile file, Long userId, String requestId) {
         try {
             String uuid = UUID.randomUUID().toString();
-            String originalName = StringUtils.cleanPath(Objects.requireNonNull(resume.getOriginalFilename()));
+            String originalName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
             String fileName = uuid + "_" + StringUtils.getFilename(originalName);
             String path = "candidates/" + userId + "/" + fileName;
 
-            log.debug("Request [{}]: Uploading CV to Supabase S3 at path={}", requestId, path);
+            log.debug("Request [{}]: Uploading to Supabase S3 at path={}", requestId, path);
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(supabaseBucket)
                     .key(path)
-                    .contentType(resume.getContentType())
+                    .contentType(file.getContentType())
                     .build();
 
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(
-                    resume.getInputStream(), resume.getSize()));
+                    file.getInputStream(), file.getSize()));
 
             String publicUrl = supabaseUrl + "/storage/v1/object/public/" + supabaseBucket + "/" + path;
 
@@ -50,8 +50,8 @@ public class FileStorageService {
             return publicUrl;
 
         } catch (Exception e) {
-            log.error("Request [{}]: Failed to upload CV to Supabase S3 for userId={}", requestId, userId, e);
-            throw new RuntimeException("CV upload to Supabase S3 failed: " + e.getMessage());
+            log.error("Request [{}]: Failed to upload to Supabase S3 for userId={}", requestId, userId, e);
+            throw new RuntimeException("Upload to Supabase S3 failed: " + e.getMessage());
         }
     }
 }

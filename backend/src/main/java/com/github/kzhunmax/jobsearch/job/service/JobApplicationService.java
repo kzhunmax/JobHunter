@@ -6,7 +6,8 @@ import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.job.validator.JobApplicationValidator;
-import com.github.kzhunmax.jobsearch.job.validator.ResumeValidator;
+import com.github.kzhunmax.jobsearch.shared.validator.FileValidator;
+import com.github.kzhunmax.jobsearch.shared.FileStorageService;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.user.model.Resume;
@@ -40,7 +41,7 @@ public class JobApplicationService {
     private final RepositoryHelper repositoryHelper;
     private final FileStorageService fileStorageService;
     private final JobApplicationValidator jobApplicationValidator;
-    private final ResumeValidator resumeValidator;
+    private final FileValidator fileValidator;
 
 
     @Caching(evict = {
@@ -55,8 +56,8 @@ public class JobApplicationService {
         User candidate = repositoryHelper.findUserById(userId);
         UserProfile candidateProfile = repositoryHelper.findUserProfileByUserId(userId);
         jobApplicationValidator.validateNoDuplicateApplication(job, candidate);
-        resumeValidator.validateResume(resumeFile);
-        String resumeUrl = fileStorageService.uploadResumeToSupabase(resumeFile, userId, requestId);
+        fileValidator.validateResume(resumeFile);
+        String resumeUrl = fileStorageService.uploadFileToSupabase(resumeFile, userId, requestId);
         Resume resume = createAndSaveResume(resumeFile, resumeUrl, candidateProfile);
         JobApplication application = createAndSaveApplication(job, candidate, coverLetter, resume);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);

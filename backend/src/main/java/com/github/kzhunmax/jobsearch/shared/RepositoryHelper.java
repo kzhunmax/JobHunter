@@ -29,9 +29,9 @@ public class RepositoryHelper {
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
     }
 
-    public UserProfile findUserProfileByUserId(Long userProfileId) {
-        return userProfileRepository.findById(userProfileId)
-                .orElseThrow(() -> new UserProfileNotFound(userProfileId));
+    public UserProfile findUserProfileByUserId(Long userId) {
+        return userProfileRepository.findById(userId)
+                .orElseThrow(() -> new UserProfileNotFound(userId));
     }
 
     public JobApplication findApplicationById(Long applicationId) {
