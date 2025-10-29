@@ -1,23 +1,17 @@
 package com.github.kzhunmax.jobsearch.job.service;
 
-import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
 import com.github.kzhunmax.jobsearch.exception.DuplicateApplicationException;
-import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
-import com.github.kzhunmax.jobsearch.exception.UserProfileNotFound;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobApplicationMapper;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
-import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.user.model.Resume;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.model.UserProfile;
 import com.github.kzhunmax.jobsearch.user.repository.ResumeRepository;
-import com.github.kzhunmax.jobsearch.user.repository.UserProfileRepository;
-import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -48,12 +42,10 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 @RequiredArgsConstructor
 public class JobApplicationService {
     private final JobApplicationRepository jobApplicationRepository;
-    private final JobRepository jobRepository;
-    private final UserRepository userRepository;
     private final ResumeRepository resumeRepository;
     private final JobApplicationMapper jobApplicationMapper;
-    private final UserProfileRepository userProfileRepository;
     private final S3Client s3Client;
+    private final RepositoryHelper repositoryHelper;
 
     @Value("${supabase.url}")
     private String supabaseUrl;
@@ -71,9 +63,9 @@ public class JobApplicationService {
     public JobApplicationResponseDTO applyToJob(Long jobId, Long userId, String coverLetter, MultipartFile resumeFile) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Applying to job - jobId={}, userId={}", requestId, jobId, userId);
-        Job job = findJobById(jobId);
-        User candidate = findUserById(userId);
-        UserProfile candidateProfile = findUserProfileByUserId(userId);
+        Job job = repositoryHelper.findJobById(jobId);
+        User candidate = repositoryHelper.findUserById(userId);
+        UserProfile candidateProfile = repositoryHelper.findUserProfileByUserId(userId);
         validateNoDuplicateApplication(job, candidate);
         validateResume(resumeFile);
         String resumeUrl = uploadCvToSupabase(resumeFile, userId, requestId);
@@ -92,7 +84,7 @@ public class JobApplicationService {
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Fetching applications for jobId={} | pageable={}", requestId, jobId, pageable);
-        Job job = findJobById(jobId);
+        Job job = repositoryHelper.findJobById(jobId);
 
         Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository
                 .findByJob(job, pageable)
@@ -108,13 +100,13 @@ public class JobApplicationService {
             @CacheEvict(value = "applicationByCandidate", allEntries = true)
     })
     @Transactional
-    public JobApplicationResponseDTO updateApplicationStatus(Long appId, ApplicationStatus status) {
+    public JobApplicationResponseDTO updateApplicationStatus(Long applicationId, ApplicationStatus status) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Updating application status - appId={}", requestId, appId);
-        JobApplication application = findApplicationById(appId);
+        log.info("Request [{}]: Updating application status - applicationId={}", requestId, applicationId);
+        JobApplication application = repositoryHelper.findApplicationById(applicationId);
         application.setStatus(status);
         JobApplication savedApplication = jobApplicationRepository.save(application);
-        log.info("Request [{}]: Application status updated successfully - appId={}", requestId, appId);
+        log.info("Request [{}]: Application status updated successfully - applicationId={}", requestId, applicationId);
         return jobApplicationMapper.toDto(savedApplication);
     }
 
@@ -127,31 +119,11 @@ public class JobApplicationService {
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Fetching application by candidate - userId={}, pageable={}", requestId, userId, pageable);
-        User candidate = findUserById(userId);
+        User candidate = repositoryHelper.findUserById(userId);
         Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository.findByCandidate(candidate, pageable).map(jobApplicationMapper::toDto);
         long total = applicationPage.getTotalPages();
         log.info("Request [{}]: Found {} applications for candidate - userId={}", requestId, total, userId);
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
-    }
-
-    private Job findJobById(Long jobId) {
-        return jobRepository.findById(jobId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
-    }
-
-    private UserProfile findUserProfileByUserId(Long userId) {
-        return userProfileRepository.findById(userId)
-                .orElseThrow(() -> new UserProfileNotFound(userId));
-    }
-
-    private User findUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
-    }
-
-    private JobApplication findApplicationById(Long appId) {
-        return jobApplicationRepository.findById(appId)
-                .orElseThrow(() -> new ApplicationNotFoundException(appId));
     }
 
     private void validateNoDuplicateApplication(Job job, User candidate) {

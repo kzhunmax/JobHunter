@@ -1,12 +1,9 @@
 package com.github.kzhunmax.jobsearch.security;
 
-import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
-import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
-import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
-import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
-import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
+import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -21,8 +18,7 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 @Transactional
 @Slf4j
 public class JobSecurityService {
-    private final JobRepository jobRepository;
-    private final JobApplicationRepository jobApplicationRepository;
+    private final RepositoryHelper repositoryHelper;
 
     @Transactional(readOnly = true)
     public boolean isJobOwner(Long jobId, Authentication authentication) {
@@ -32,7 +28,7 @@ public class JobSecurityService {
             log.debug("Request [{}]: Job ownership check failed - not authenticated", requestId);
             return false;
         }
-        Job job = findJobById(jobId);
+        Job job = repositoryHelper.findJobById(jobId);
         boolean isOwner = isJobOwner(job, getEmail(authentication));
         log.debug("Request [{}]: Job ownership check completed - jobId={}, isOwner={}", requestId, jobId, isOwner);
         return isOwner;
@@ -47,7 +43,7 @@ public class JobSecurityService {
             return false;
         }
 
-        JobApplication application = findApplicationById(applicationId);
+        JobApplication application = repositoryHelper.findApplicationById(applicationId);
         String email = getEmail(authentication);
 
         if (isAdmin(authentication)) {
@@ -67,16 +63,6 @@ public class JobSecurityService {
         }
         log.debug("Request [{}]: Application update permission denied", requestId);
         return false;
-    }
-
-    private Job findJobById(Long jobId) {
-        return jobRepository.findById(jobId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
-    }
-
-    private JobApplication findApplicationById(Long applicationId) {
-        return jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new ApplicationNotFoundException(applicationId));
     }
 
     private boolean isAuthenticated(Authentication authentication) {

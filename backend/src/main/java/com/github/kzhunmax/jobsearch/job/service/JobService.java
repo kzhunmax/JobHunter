@@ -1,14 +1,12 @@
 package com.github.kzhunmax.jobsearch.job.service;
 
-import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
 import com.github.kzhunmax.jobsearch.job.dto.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobMapper;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.user.model.User;
-import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -31,7 +29,7 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 @Transactional
 public class JobService {
     private final JobRepository jobRepository;
-    private final UserRepository userRepository;
+    private final RepositoryHelper repositoryHelper;
     private final JobSyncService jobSyncService;
     private final JobMapper jobMapper;
 
@@ -39,7 +37,7 @@ public class JobService {
     public JobResponseDTO createJob(JobRequestDTO dto, Long userId) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Creating job - userId={}", requestId, userId);
-        User user = findUserById(userId);
+        User user = repositoryHelper.findUserById(userId);
         Job job = jobMapper.toEntity(dto, user);
         Job savedJob = jobRepository.save(job);
         log.info("Request [{}]: Job created successfully - jobId={}", requestId, savedJob.getId());
@@ -47,18 +45,12 @@ public class JobService {
         return jobMapper.toDto(savedJob);
     }
 
-    private User findUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
-    }
-
     @Cacheable(value = "jobs", key = "#jobId")
     @Transactional(readOnly = true)
     public JobResponseDTO getJobById(Long jobId) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Fetching job - jobId={}", requestId, jobId);
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
+        Job job = repositoryHelper.findJobById(jobId);
         log.info("Request [{}]: Job fetched successfully - jobId={}", requestId, jobId);
         return jobMapper.toDto(job);
     }
@@ -68,8 +60,7 @@ public class JobService {
     public JobResponseDTO updateJob(Long jobId, JobRequestDTO dto) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Updating job - jobId={}", requestId, jobId);
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
+        Job job = repositoryHelper.findJobById(jobId);
         jobMapper.updateEntityFromDto(dto, job);
 
         Job updatedJob = jobRepository.save(job);
@@ -84,8 +75,7 @@ public class JobService {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Deleting job - jobId={}", requestId, jobId);
 
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new JobNotFoundException(jobId));
+        Job job = repositoryHelper.findJobById(jobId);
         job.setActive(false);
         jobRepository.save(job);
         log.info("Request [{}]: Job deleted successfully - jobId={}", requestId, jobId);

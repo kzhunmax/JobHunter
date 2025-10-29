@@ -45,7 +45,7 @@ public class UserProfileController {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
         log.info("Request [{}]: Getting profile for user='{}'", requestId, userId);
-        UserProfileResponseDTO profileDto = userProfileService.getUserProfileById(userId);
+        UserProfileResponseDTO profileDto = userProfileService.getUserProfileByUserId(userId);
         log.info("Request [{}]: Profile retrieved successfully - profileId={}", requestId, profileDto.id());
         return ApiResponse.success(profileDto, requestId);
     }
