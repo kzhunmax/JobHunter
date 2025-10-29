@@ -1,11 +1,12 @@
 package com.github.kzhunmax.jobsearch.job.service;
 
-import com.github.kzhunmax.jobsearch.exception.DuplicateApplicationException;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobApplicationMapper;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
+import com.github.kzhunmax.jobsearch.job.validator.JobApplicationValidator;
+import com.github.kzhunmax.jobsearch.job.validator.ResumeValidator;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.user.model.Resume;
@@ -15,7 +16,6 @@ import com.github.kzhunmax.jobsearch.user.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -26,14 +26,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import java.util.Objects;
-import java.util.UUID;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -44,16 +37,11 @@ public class JobApplicationService {
     private final JobApplicationRepository jobApplicationRepository;
     private final ResumeRepository resumeRepository;
     private final JobApplicationMapper jobApplicationMapper;
-    private final S3Client s3Client;
     private final RepositoryHelper repositoryHelper;
+    private final FileStorageService fileStorageService;
+    private final JobApplicationValidator jobApplicationValidator;
+    private final ResumeValidator resumeValidator;
 
-    @Value("${supabase.url}")
-    private String supabaseUrl;
-
-    @Value("${supabase.bucket:resumes}")
-    private String supabaseBucket;
-
-    private static final int ACCEPTABLE_FILE_SIZE = 5 * 1024 * 1024;
 
     @Caching(evict = {
             @CacheEvict(value = "applicationByJob", allEntries = true),
@@ -66,9 +54,9 @@ public class JobApplicationService {
         Job job = repositoryHelper.findJobById(jobId);
         User candidate = repositoryHelper.findUserById(userId);
         UserProfile candidateProfile = repositoryHelper.findUserProfileByUserId(userId);
-        validateNoDuplicateApplication(job, candidate);
-        validateResume(resumeFile);
-        String resumeUrl = uploadCvToSupabase(resumeFile, userId, requestId);
+        jobApplicationValidator.validateNoDuplicateApplication(job, candidate);
+        resumeValidator.validateResume(resumeFile);
+        String resumeUrl = fileStorageService.uploadResumeToSupabase(resumeFile, userId, requestId);
         Resume resume = createAndSaveResume(resumeFile, resumeUrl, candidateProfile);
         JobApplication application = createAndSaveApplication(job, candidate, coverLetter, resume);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
@@ -126,11 +114,6 @@ public class JobApplicationService {
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
-    private void validateNoDuplicateApplication(Job job, User candidate) {
-        if (jobApplicationRepository.findByJobAndCandidate(job, candidate).isPresent())
-            throw new DuplicateApplicationException();
-    }
-
     private Resume createAndSaveResume(MultipartFile resumeFile, String resumeUrl, UserProfile userProfile) {
         Resume resume = Resume.builder()
                 .title(resumeFile.getOriginalFilename())
@@ -150,43 +133,5 @@ public class JobApplicationService {
                 .build();
 
         return jobApplicationRepository.save(application);
-    }
-
-    private void validateResume(MultipartFile resumeFile) {
-        if (resumeFile.isEmpty() || !Objects.equals(resumeFile.getContentType(), "application/pdf")) {
-            throw new IllegalArgumentException("CV must be a non-empty PDF file");
-        }
-        if (resumeFile.getSize() > ACCEPTABLE_FILE_SIZE) {
-            throw new IllegalArgumentException("CV size exceeds 5MB limit");
-        }
-    }
-
-    private String uploadCvToSupabase(MultipartFile cv, Long userId, String requestId) {
-        try {
-            String uuid = UUID.randomUUID().toString();
-            String originalName = StringUtils.cleanPath(Objects.requireNonNull(cv.getOriginalFilename()));
-            String fileName = uuid + "_" + StringUtils.getFilename(originalName);
-            String path = "candidates/" + userId + "/" + fileName;
-
-            log.debug("Request [{}]: Uploading CV to Supabase S3 at path={}", requestId, path);
-
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(supabaseBucket)
-                    .key(path)
-                    .contentType(cv.getContentType())
-                    .build();
-
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(
-                    cv.getInputStream(), cv.getSize()));
-
-            String publicUrl = supabaseUrl + "/storage/v1/object/public/" + supabaseBucket + "/" + path;
-
-            log.info("Request [{}]: CV uploaded successfully to Supabase S3 - url={}", requestId, publicUrl);
-            return publicUrl;
-
-        } catch (Exception e) {
-            log.error("Request [{}]: Failed to upload CV to Supabase S3 for userId={}", requestId, userId, e);
-            throw new RuntimeException("CV upload to Supabase S3 failed: " + e.getMessage());
-        }
     }
 }

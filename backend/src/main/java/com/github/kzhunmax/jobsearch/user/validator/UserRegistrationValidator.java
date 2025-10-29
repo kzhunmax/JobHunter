@@ -1,4 +1,4 @@
-package com.github.kzhunmax.jobsearch.validator;
+package com.github.kzhunmax.jobsearch.user.validator;
 
 import com.github.kzhunmax.jobsearch.user.dto.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.exception.EmailExistsException;

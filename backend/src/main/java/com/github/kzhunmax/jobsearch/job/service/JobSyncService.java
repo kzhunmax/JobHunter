@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.job.service;
 
+import com.github.kzhunmax.jobsearch.job.mapper.JobDocumentMapper;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.es.JobDocument;
 import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
@@ -17,6 +18,7 @@ public class JobSyncService {
 
     private final JobRepository jobRepository;
     private final JobSearchRepository jobSearchRepository;
+    private final JobDocumentMapper jobDocumentMapper;
 
     @PostConstruct
     @Transactional(readOnly = true)
@@ -31,15 +33,7 @@ public class JobSyncService {
     }
 
     public void syncJob(Job job) {
-        JobDocument doc = JobDocument.builder()
-                .id(job.getId())
-                .title(job.getTitle())
-                .description(job.getDescription())
-                .company(job.getCompany())
-                .location(job.getLocation())
-                .salary(job.getSalary())
-                .active(job.isActive())
-                .build();
+        JobDocument doc = jobDocumentMapper.toDocument(job);
         jobSearchRepository.save(doc);
         log.info("Synchronized job with ID {} to Elasticsearch.", job.getId());
     }

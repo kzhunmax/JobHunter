@@ -14,7 +14,7 @@ import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.shared.CookieService;
-import com.github.kzhunmax.jobsearch.validator.UserRegistrationValidator;
+import com.github.kzhunmax.jobsearch.user.validator.UserRegistrationValidator;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
