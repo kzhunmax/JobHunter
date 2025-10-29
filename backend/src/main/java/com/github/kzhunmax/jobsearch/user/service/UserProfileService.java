@@ -85,10 +85,12 @@ public class UserProfileService {
 
         fileValidator.validateProfilePhoto(file);
         UserProfile profile = repositoryHelper.findUserProfileByUserId(userId);
-        String photoUrl = fileStorageService.uploadFileToSupabase(file, userId, requestId);
-        profile.setPhotoUrl(photoUrl);
+        String oldPhotoUrl = profile.getPhotoUrl();
+        String newPhotoUrl = fileStorageService.uploadFileToSupabase(file, userId, requestId);
+        fileStorageService.deleteFileFromSupabase(oldPhotoUrl, requestId);
+        profile.setPhotoUrl(newPhotoUrl);
         userProfileRepository.save(profile);
         log.info("Request [{}]: Profile photo uploaded and profile updated - userId={}", requestId, userId);
-        return photoUrl;
+        return newPhotoUrl;
     }
 }

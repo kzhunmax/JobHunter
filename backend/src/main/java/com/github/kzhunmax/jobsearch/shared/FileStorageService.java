@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.util.Objects;
@@ -52,6 +53,34 @@ public class FileStorageService {
         } catch (Exception e) {
             log.error("Request [{}]: Failed to upload to Supabase S3 for userId={}", requestId, userId, e);
             throw new RuntimeException("Upload to Supabase S3 failed: " + e.getMessage());
+        }
+    }
+
+    public void deleteFileFromSupabase(String fileUrl, String requestId) {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            log.debug("Request [{}]: No file URL provided, skipping deletion.", requestId);
+            return;
+        }
+
+        try {
+            String baseUrlPrefix = supabaseUrl + "/storage/v1/object/public/" + supabaseBucket + "/";
+            if (!fileUrl.startsWith(baseUrlPrefix)) {
+                log.warn("Request [{}]: File URL {} does not match the expected Supabase URL structure. Skipping deletion.", requestId, fileUrl);
+                return;
+            }
+            String objectKey = fileUrl.substring(baseUrlPrefix.length());
+            log.debug("Request [{}]: Deleting file from Supabase S3 with key={}", requestId, objectKey);
+
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(supabaseBucket)
+                    .key(objectKey)
+                    .build();
+
+            s3Client.deleteObject(deleteObjectRequest);
+
+            log.info("Request [{}]: File deleted successfully from Supabase S3 - key={}", requestId, objectKey);
+        } catch (Exception e) {
+        log.warn("Request [{}]: Failed to delete file {} from Supabase S3. It might need manual cleanup.", requestId, fileUrl, e);
         }
     }
 }
