@@ -8,6 +8,7 @@ import com.github.kzhunmax.jobsearch.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -46,4 +47,11 @@ public class User extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<JobApplication> applications = new HashSet<>();
+
+    @Column(name = "reset_password_token")
+    private String resetPasswordToken;
+
+    @Column(name = "reset_password_token_expiry")
+    private Instant resetPasswordTokenExpiry;
+
 }

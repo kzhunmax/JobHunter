@@ -6,4 +6,8 @@ public class InvalidOrExpiredTokenException extends ApiException {
     public InvalidOrExpiredTokenException() {
         super("Refresh token is invalid or expired", HttpStatus.UNAUTHORIZED, "INVALID_REFRESH");
     }
+
+    public InvalidOrExpiredTokenException(String message, HttpStatus httpStatus, String errorCode) {
+        super(message, httpStatus, errorCode);
+    }
 }

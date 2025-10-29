@@ -28,7 +28,7 @@ public abstract class UserMapper {
     public abstract UserResponseDTO toDto(User user);
 
     @Named("encodePassword")
-    protected String encodePassword(String password) {
+    public String encodePassword(String password) {
         return passwordEncoder.encode(password);
     }
 }

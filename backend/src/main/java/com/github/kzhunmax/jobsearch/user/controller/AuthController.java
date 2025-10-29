@@ -2,10 +2,7 @@ package com.github.kzhunmax.jobsearch.user.controller;
 
 import com.github.kzhunmax.jobsearch.exception.ApiException;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
-import com.github.kzhunmax.jobsearch.user.dto.JwtResponse;
-import com.github.kzhunmax.jobsearch.user.dto.UserLoginDTO;
-import com.github.kzhunmax.jobsearch.user.dto.UserRegistrationDTO;
-import com.github.kzhunmax.jobsearch.user.dto.UserResponseDTO;
+import com.github.kzhunmax.jobsearch.user.dto.*;
 import com.github.kzhunmax.jobsearch.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -186,8 +183,51 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/main")
-    public String mainPage() {
-        return "You successfully login to main page";
+    @PostMapping(value = "/forgot-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Request password reset",
+            description = "Sends a password reset link to the user's email if the account exists"
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Request processed. If an account exists, an email will be sent.",
+                    useReturnTypeSchema = true
+            )
+    })
+    public ResponseEntity<ApiResponse<String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequestDTO dto
+    ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        authService.forgotPassword(dto.email());
+        return ApiResponse.success("A password reset link has been sent.", requestId);
+    }
+
+    @PostMapping(value = "/reset-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Reset password",
+            description = "Sets a new password using a valid reset token"
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Password has been reset successfully",
+                    useReturnTypeSchema = true
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid or expired token, or passwords do not match",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<ApiResponse<String>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequestDTO dto
+    ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        authService.resetPassword(dto);
+        return ApiResponse.success("Password has been reset successfully.", requestId);
     }
 }

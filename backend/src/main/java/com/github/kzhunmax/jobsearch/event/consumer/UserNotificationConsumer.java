@@ -1,6 +1,7 @@
 package com.github.kzhunmax.jobsearch.event.consumer;
 
 import com.github.kzhunmax.jobsearch.shared.event.EventType;
+import com.github.kzhunmax.jobsearch.shared.event.PasswordResetEvent;
 import com.github.kzhunmax.jobsearch.shared.event.UserEvent;
 import com.github.kzhunmax.jobsearch.shared.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -25,5 +26,15 @@ public class UserNotificationConsumer {
             log.info("Sending verification email to {}", event.email());
             emailService.sendVerificationEmail(event.email());
         }
+    }
+
+    @KafkaListener(
+            containerFactory = "kafkaListenerContainerFactory",
+            topics = "password-reset-events",
+            groupId = "password-reset-group"
+    )
+    public void onPasswordResetEvent(PasswordResetEvent event) {
+        log.info("Sending password reset email to {}", event.email());
+        emailService.sendPasswordResetEmail(event.email(), event.token());
     }
 }

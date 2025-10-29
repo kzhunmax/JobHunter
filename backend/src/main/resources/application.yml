@@ -61,3 +61,5 @@ supabase:
 app:
   oauth2:
     redirect-uri: http://localhost:8080/api/auth/main
+  frontend:
+    reset-url: http://localhost:3000/reset-password

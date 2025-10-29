@@ -40,7 +40,7 @@ dependencies {
 	implementation 'tools.jackson.datatype:jackson-datatype-jsr310:3.0.0-rc2'
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 	implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
-	implementation 'ch.qos.logback:logback-classic:1.5.18'
+	implementation 'ch.qos.logback:logback-classic:1.5.20'
 	implementation 'org.springframework.security:spring-security-crypto'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'

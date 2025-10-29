@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.event.producer;
 
+import com.github.kzhunmax.jobsearch.shared.event.PasswordResetEvent;
 import com.github.kzhunmax.jobsearch.shared.event.UserEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,5 +17,10 @@ public class UserEventProducer {
     public void sendUserEvent(UserEvent event) {
         kafkaTemplate.send("user-events", event.email(), event);
         log.info("Sent UserEvent to Kafka {}", event);
+    }
+
+    public void sendPasswordResetEvent(PasswordResetEvent event) {
+        kafkaTemplate.send("password-reset-events", event.email(), event);
+        log.info("Sent PasswordResetEvent to Kafka for email {}", event.email());
     }
 }

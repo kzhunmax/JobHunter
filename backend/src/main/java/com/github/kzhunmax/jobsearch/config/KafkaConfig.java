@@ -64,4 +64,12 @@ public class KafkaConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic passwordResetTopic() {
+        return TopicBuilder.name("password-reset-events")
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 }
