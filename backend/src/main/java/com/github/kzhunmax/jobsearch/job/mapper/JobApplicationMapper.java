@@ -2,28 +2,18 @@ package com.github.kzhunmax.jobsearch.job.mapper;
 
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-public class JobApplicationMapper {
+@Mapper(componentModel = "spring")
+public interface JobApplicationMapper {
 
-    public JobApplicationResponseDTO toDto(JobApplication application) {
-        if (application == null) return null;
-
-        var job = application.getJob();
-        var candidate = application.getCandidate();
-        var resume = application.getResume();
-
-        return new JobApplicationResponseDTO(
-                application.getId(),
-                job != null ? job.getId() : null,
-                job != null ? job.getTitle() : null,
-                job != null ? job.getCompany() : null,
-                candidate != null ? candidate.getEmail() : null,
-                application.getStatus() != null ? application.getStatus().name() : null,
-                application.getAppliedAt() != null ? application.getAppliedAt().toString() : null,
-                application.getCoverLetter(),
-                resume != null ? resume.getFileUrl() : null
-        );
-    }
+    @Mapping(target = "jobId", source = "job.id")
+    @Mapping(target = "jobTitle", source = "job.title")
+    @Mapping(target = "company", source = "job.company")
+    @Mapping(target = "candidateEmail", source = "candidate.email")
+    @Mapping(target = "resumeUrl", source = "resume.fileUrl")
+    @Mapping(target = "status", expression = "java(application.getStatus() != null ? application.getStatus().name() : null)")
+    @Mapping(target = "appliedAt", expression = "java(application.getAppliedAt() != null ? application.getAppliedAt().toString() : null)")
+    JobApplicationResponseDTO toDto(JobApplication application);
 }

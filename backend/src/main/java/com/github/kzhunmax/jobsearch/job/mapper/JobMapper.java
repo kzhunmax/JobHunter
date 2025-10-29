@@ -4,49 +4,28 @@ import com.github.kzhunmax.jobsearch.job.dto.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.user.model.User;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Component
-public class JobMapper {
+@Mapper(componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+public interface JobMapper {
 
-    public Job toEntity(JobRequestDTO dto, User user) {
-        if (dto == null || user == null) return null;
+    @Mapping(target = "active", constant = "true")
+    @Mapping(target = "applications", ignore = true)
+    @Mapping(target = "postedBy", source = "user")
+    Job toEntity(JobRequestDTO dto, User user);
 
-        return Job.builder()
-                .title(dto.title())
-                .description(dto.description())
-                .company(dto.company())
-                .location(dto.location())
-                .salary(dto.salary())
-                .applicationDeadline(dto.applicationDeadline())
-                .active(true)
-                .postedBy(user)
-                .build();
-    }
+    @Mapping(target = "postedBy", source = "job.postedBy.email")
+    JobResponseDTO toDto(Job job);
 
-    public JobResponseDTO toDto(Job job) {
-        if (job == null) return null;
-
-        return new JobResponseDTO(
-                job.getId(),
-                job.getTitle(),
-                job.getDescription(),
-                job.getCompany(),
-                job.getLocation(),
-                job.getSalary(),
-                job.getApplicationDeadline(),
-                job.isActive(),
-                job.getPostedBy() != null ? job.getPostedBy().getEmail() : null
-        );
-    }
-
-    public void updateEntityFromDto(JobRequestDTO dto, Job job) {
-        if (dto == null || job == null) return;
-
-        if (dto.title() != null) job.setTitle(dto.title());
-        if (dto.description() != null) job.setDescription(dto.description());
-        if (dto.company() != null) job.setCompany(dto.company());
-        if (dto.location() != null) job.setLocation(dto.location());
-        if (dto.salary() != null) job.setSalary(dto.salary());
-    }
+    @Mapping(target = "active", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "applications", ignore = true)
+    @Mapping(target = "postedBy", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntityFromDto(JobRequestDTO dto, @MappingTarget Job job);
 }

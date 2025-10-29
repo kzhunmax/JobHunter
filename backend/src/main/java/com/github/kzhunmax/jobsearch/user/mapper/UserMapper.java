@@ -1,39 +1,34 @@
 package com.github.kzhunmax.jobsearch.user.mapper;
 
+import com.github.kzhunmax.jobsearch.shared.enums.Role;
 import com.github.kzhunmax.jobsearch.user.dto.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.user.dto.UserResponseDTO;
-import com.github.kzhunmax.jobsearch.shared.enums.AuthProvider;
-import com.github.kzhunmax.jobsearch.shared.enums.Role;
 import com.github.kzhunmax.jobsearch.user.model.User;
-import lombok.RequiredArgsConstructor;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-@Component
-@RequiredArgsConstructor
-public class UserMapper {
+@Mapper(componentModel = "spring")
+public abstract class UserMapper {
 
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-    public User toEntity(UserRegistrationDTO dto, Set<Role> roles) {
-        if (dto == null) return null;
+    @Mapping(target = "password", source = "dto.password", qualifiedByName = "encodePassword")
+    @Mapping(target = "provider", constant = "LOCAL")
+    @Mapping(target = "email", expression = "java(dto.email().trim())")
+    @Mapping(target = "jobs", ignore = true)
+    @Mapping(target = "applications", ignore = true)
+    public abstract User toEntity(UserRegistrationDTO dto, Set<Role> roles);
 
-        return User.builder()
-                .email(dto.email().trim())
-                .password(passwordEncoder.encode(dto.password()))
-                .provider(AuthProvider.LOCAL)
-                .roles(roles)
-                .build();
-    }
+    public abstract UserResponseDTO toDto(User user);
 
-    public UserResponseDTO toDto(User user) {
-        if (user == null) return null;
-
-        return new UserResponseDTO(
-                user.getEmail(),
-                user.getRoles()
-        );
+    @Named("encodePassword")
+    protected String encodePassword(String password) {
+        return passwordEncoder.encode(password);
     }
 }
