@@ -57,6 +57,7 @@ public class AuthService {
         Set<Role> roles = resolveRoles(dto.roles());
         User user = userMapper.toEntity(dto, roles);
         user.setEmailVerifyToken(UUID.randomUUID().toString());
+        user.generateApiKey();
         User savedUser = userRepository.save(user);
         UserEvent event = new UserEvent(dto.email(), EventType.REGISTERED, user.getEmailVerifyToken());
         userEventProducer.sendUserEvent(event);

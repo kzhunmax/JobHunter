@@ -2,6 +2,8 @@ package com.github.kzhunmax.jobsearch.user.controller;
 
 import com.github.kzhunmax.jobsearch.exception.ApiException;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
+import com.github.kzhunmax.jobsearch.security.PricingPlan;
+import com.github.kzhunmax.jobsearch.security.RateLimitingService;
 import com.github.kzhunmax.jobsearch.user.dto.*;
 import com.github.kzhunmax.jobsearch.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,7 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 public class AuthController {
 
     private final AuthService authService;
+    private final RateLimitingService rateLimitingService;
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
@@ -112,15 +116,16 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = UserLoginDTO.class))
             )
             @Valid @RequestBody UserLoginDTO loginDto,
-            HttpServletResponse response
+            HttpServletResponse response,
+            HttpServletRequest request
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        String ipAddress = request.getRemoteAddr();
+
+        rateLimitingService.consumeToken(ipAddress, PricingPlan.FREE, "IP_ADDRESS");
         log.info("Request [{}]: Login attempt for email={}", requestId, loginDto.email());
-
         JwtResponse jwtResponse = authService.authenticate(loginDto.email(), response);
-
         log.info("Request [{}]: Successful login for email={}", requestId, loginDto.email());
-
         return ApiResponse.success(jwtResponse, requestId);
     }
 

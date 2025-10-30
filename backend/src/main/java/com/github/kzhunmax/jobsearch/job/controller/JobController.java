@@ -6,7 +6,9 @@ import com.github.kzhunmax.jobsearch.job.model.es.JobDocument;
 import com.github.kzhunmax.jobsearch.job.service.JobService;
 import com.github.kzhunmax.jobsearch.job.service.search.JobSearchService;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
+import com.github.kzhunmax.jobsearch.security.RateLimitingService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
+import com.github.kzhunmax.jobsearch.user.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -38,6 +40,7 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 public class JobController {
     private final JobService jobService;
     private final JobSearchService jobSearchService;
+    private final RateLimitingService rateLimitingService;
 
     @PreAuthorize("hasRole('RECRUITER')")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -76,7 +79,7 @@ public class JobController {
             )
             @Valid @RequestBody JobRequestDTO dto,
             @AuthenticationPrincipal UserDetailsImpl userDetails
-            ) {
+    ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
         log.info("Request [{}]: Creating job - userId={}", requestId, userId);
@@ -263,9 +266,12 @@ public class JobController {
             @Parameter(description = "Optional location filter", example = "Remote") @RequestParam(required = false) String location,
             @Parameter(description = "Optional company filter", example = "TechCorp") @RequestParam(required = false) String company,
             @PageableDefault(size = 20) Pageable pageable,
-            PagedResourcesAssembler<JobDocument> pagedAssembler
+            PagedResourcesAssembler<JobDocument> pagedAssembler,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        User user = userDetails.getUser();
+        rateLimitingService.consumeToken(user.getApiKey(), user.getPricingPlan(), "API_KEY");
         log.info("Request [{}]: Searching jobs - query={}, location={}, company={}", requestId, query, location, company);
         PagedModel<EntityModel<JobDocument>> results = jobSearchService.searchJobs(query, location, company, pageable, pagedAssembler);
         log.info("Request [{}]: Search completed - {} results", requestId, results.getMetadata().getTotalElements());
