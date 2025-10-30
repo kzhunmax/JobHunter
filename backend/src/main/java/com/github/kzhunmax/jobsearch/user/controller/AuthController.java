@@ -230,4 +230,36 @@ public class AuthController {
         authService.resetPassword(dto);
         return ApiResponse.success("Password has been reset successfully.", requestId);
     }
+
+    @GetMapping("/verify-email")
+    @Operation(summary = "Verify user email", description = "Verifies a user's email address using the provided token.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token")
+    })
+    public ResponseEntity<ApiResponse<String>> verifyEmail(@RequestParam("token") String token) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        authService.verifyEmail(token);
+        return ApiResponse.success("Email verified successfully.", requestId);
+    }
+
+    @PostMapping(value = "/resend-verification", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Resend verification email",
+            description = "Sends a new verification email to a user who has not yet verified their account."
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Request processed. If an unverified account exists, an email will be sent.",
+                    useReturnTypeSchema = true
+            )
+    })
+    public ResponseEntity<ApiResponse<String>> resendVerification(
+            @Valid @RequestBody ForgotPasswordRequestDTO dto
+    ) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        authService.resendVerification(dto.email());
+        return ApiResponse.success("If an unverified account with this email exists, a new verification link has been sent.", requestId);
+    }
 }

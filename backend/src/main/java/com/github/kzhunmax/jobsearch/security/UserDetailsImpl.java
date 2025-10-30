@@ -61,4 +61,9 @@ public class UserDetailsImpl implements OAuth2User, UserDetails {
     public Long getId() {
         return user.getId();
     }
+
+    @Override
+    public boolean isEnabled() {
+        return user.isEmailVerified();
+    }
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.Enumerated;
 
 public record UserEvent(
         String email,
-        @Enumerated(EnumType.STRING) EventType eventType
+        @Enumerated(EnumType.STRING) EventType eventType,
+        String verificationToken
 ) {
 }

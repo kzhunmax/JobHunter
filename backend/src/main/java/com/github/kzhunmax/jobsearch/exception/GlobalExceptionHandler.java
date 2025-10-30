@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -98,6 +99,13 @@ public class GlobalExceptionHandler {
 
         log.warn("Request [{}]: Type mismatch for parameter '{}' - expected={}, received='{}' ",  requestId, paramName, requiredType, ex.getValue(), ex);
         return ApiResponse.error(HttpStatus.BAD_REQUEST, "TYPE_MISMATCH", message, requestId);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDisabledException(DisabledException ex) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.warn("Request [{}]: Authentication failed for disabled account - {}", requestId, ex.getMessage());
+        return ApiResponse.error(HttpStatus.FORBIDDEN, "EMAIL_NOT_VERIFIED", "Please verify your email address before logging in.", requestId);
     }
 
     @ExceptionHandler(Exception.class)

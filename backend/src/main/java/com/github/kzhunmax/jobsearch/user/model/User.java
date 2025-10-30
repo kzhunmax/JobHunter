@@ -54,4 +54,11 @@ public class User extends BaseEntity {
     @Column(name = "reset_password_token_expiry")
     private Instant resetPasswordTokenExpiry;
 
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Column(name = "email_verify_token")
+    private String emailVerifyToken;
+
 }

@@ -65,6 +65,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                         user.getProvider() + " account. Please use it to login.");
             }
             log.info("Request [{}]: Found existing user for OAuth2 - email={}", requestId, email);
+            if (!user.isEmailVerified()) {
+                log.info("Request [{}]: Marking existing OAuth user as verified - email={}", requestId, email);
+                user.setEmailVerified(true);
+                userRepository.save(user);
+            }
         } else {
             log.info("Request [{}]: Creating new user for OAuth2 - email={}", requestId, email);
             user = registerNewUser(request, userInfo);
@@ -79,6 +84,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .password("")
                 .provider(AuthProvider.valueOf(request.getClientRegistration().getRegistrationId().toUpperCase()))
                 .roles(Set.of(Role.ROLE_CANDIDATE))
+                .emailVerified(true)
                 .build();
         return userRepository.save(newUser);
     }

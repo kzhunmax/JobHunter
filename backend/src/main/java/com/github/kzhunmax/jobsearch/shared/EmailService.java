@@ -16,11 +16,15 @@ public class EmailService {
     @Value("${app.frontend.reset-url}")
     private String resetUrl;
 
-    public void sendVerificationEmail(String email) {
+    @Value("${app.backend.url}")
+    private String backendUrl;
+
+    public void sendVerificationEmail(String email, String token) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("Verify Your Email");
-        message.setText("Click here to verify: http://localhost:8080/api/auth/main");
+        String verifyLink = backendUrl + "/api/auth/verify-email?token=" + token;
+        message.setText("Click here to verify: " + verifyLink);
         mailSender.send(message);
         log.info("Verification email sent to {}", email);
     }

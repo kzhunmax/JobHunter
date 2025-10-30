@@ -24,7 +24,7 @@ public class UserNotificationConsumer {
     public void onUserEvent(UserEvent event) {
         if (EventType.REGISTERED.equals(event.eventType())) {
             log.info("Sending verification email to {}", event.email());
-            emailService.sendVerificationEmail(event.email());
+            emailService.sendVerificationEmail(event.email(), event.verificationToken());
         }
     }
 

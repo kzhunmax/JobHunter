@@ -56,8 +56,9 @@ public class AuthService {
         userRegistrationValidator.validateRegistration(dto);
         Set<Role> roles = resolveRoles(dto.roles());
         User user = userMapper.toEntity(dto, roles);
+        user.setEmailVerifyToken(UUID.randomUUID().toString());
         User savedUser = userRepository.save(user);
-        UserEvent event = new UserEvent(dto.email(), EventType.REGISTERED);
+        UserEvent event = new UserEvent(dto.email(), EventType.REGISTERED, user.getEmailVerifyToken());
         userEventProducer.sendUserEvent(event);
         log.info("Request [{}]: User registered successfully - email={}", requestId, dto.email());
         return userMapper.toDto(savedUser);
@@ -137,5 +138,41 @@ public class AuthService {
         userRepository.save(user);
 
         log.info("Request [{}]: Password reset successfully for user={}", requestId, user.getEmail());
+    }
+
+    @Transactional
+    public void verifyEmail(String token) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Attempting to verify email with token={}", requestId, token);
+
+        User user = userRepository.findByEmailVerifyToken(token)
+                .orElseThrow(() -> new InvalidOrExpiredTokenException("Invalid or expired verification token", HttpStatus.BAD_REQUEST, "INVALID_TOKEN"));
+
+        user.setEmailVerified(true);
+        user.setEmailVerifyToken(null);
+        userRepository.save(user);
+
+        log.info("Request [{}]: Email verified successfully for user={}", requestId, user.getEmail());
+    }
+
+    @Transactional
+    public void resendVerification(String email) {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("Request [{}]: Resend verification requested for email={}", requestId, email);
+
+        userRepository.findByEmail(email)
+                .filter(user -> user.getProvider() == AuthProvider.LOCAL)
+                .filter(user -> !user.isEmailVerified())
+                .ifPresent(user -> {
+                    String token = UUID.randomUUID().toString();
+                    user.setEmailVerifyToken(token);
+                    userRepository.save(user);
+
+                    UserEvent event = new UserEvent(user.getEmail(), EventType.REGISTERED, token);
+                    userEventProducer.sendUserEvent(event);
+                    log.info("Request [{}]: New verification token generated and event published for email={}", requestId, email);
+                });
+
+        log.info("Request [{}]: Resend verification request processed for email={}", requestId, email);
     }
 }
