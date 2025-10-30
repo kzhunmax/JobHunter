@@ -32,7 +32,7 @@ public class RedisConfig {
     @Value("${spring.data.redis.port:6379}")
     private int port;
 
-    @Value("${spring.redis.password:}")
+    @Value("${spring.dara.redis.password:}")
     private String password;
 
     @Value("${spring.data.redis.database:0}")

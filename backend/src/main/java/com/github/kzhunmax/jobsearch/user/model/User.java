@@ -1,16 +1,18 @@
 package com.github.kzhunmax.jobsearch.user.model;
 
-import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
+import com.github.kzhunmax.jobsearch.security.PricingPlan;
 import com.github.kzhunmax.jobsearch.shared.enums.AuthProvider;
 import com.github.kzhunmax.jobsearch.shared.enums.Role;
+import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users", indexes = {
@@ -61,4 +63,20 @@ public class User extends BaseEntity {
     @Column(name = "email_verify_token")
     private String emailVerifyToken;
 
+    @OneToOne(mappedBy = "user")
+    private UserProfile profile;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pricing_plan", nullable = false)
+    @Builder.Default
+    private PricingPlan pricingPlan = PricingPlan.FREE;
+
+    @Column(name = "api_key", unique = true)
+    private String apiKey;
+
+    public void generateApiKey() {
+        if (this.apiKey == null) {
+            this.apiKey = "js_key_" + UUID.randomUUID().toString().replace("-", "");
+        }
+    }
 }
