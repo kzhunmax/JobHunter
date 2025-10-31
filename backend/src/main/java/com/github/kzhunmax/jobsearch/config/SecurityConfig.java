@@ -51,6 +51,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/jobs/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/user/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/companies/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth

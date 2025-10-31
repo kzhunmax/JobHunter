@@ -21,10 +21,9 @@ public record JobRequestDTO(
         String description,
 
 
-        @Schema(description = "Company name offering the position", maxLength = 255)
-        @NotBlank(message = "Company is required")
-        @Size(max = 255)
-        String company,
+        @Schema(description = "ID of the company posting the job", example = "1")
+        @NotNull(message = "Company ID is required")
+        Long companyId,
 
         @Schema(description = "Job location (city, state, remote, etc.)", maxLength = 100)
         @NotBlank(message = "Location is required")

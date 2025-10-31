@@ -1,5 +1,8 @@
 package com.github.kzhunmax.jobsearch.user.mapper;
 
+import com.github.kzhunmax.jobsearch.company.mapper.CompanyMapper;
+import com.github.kzhunmax.jobsearch.company.model.Company;
+import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ProfileType;
 import com.github.kzhunmax.jobsearch.shared.enums.Role;
 import com.github.kzhunmax.jobsearch.user.dto.UserProfileRequestDTO;
@@ -12,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {LanguageSkillMapper.class, ResumeMapper.class})
+@Mapper(componentModel = "spring", uses = {LanguageSkillMapper.class, ResumeMapper.class, CompanyMapper.class})
 public abstract class UserProfileMapper {
 
     @Autowired
@@ -21,11 +24,15 @@ public abstract class UserProfileMapper {
     @Autowired
     private ResumeMapper resumeMapper;
 
+    @Autowired
+    private RepositoryHelper repositoryHelper;
+
     @Mapping(target = "activityStatus", constant = "ACTIVE")
     @Mapping(target = "profileType", source = "user", qualifiedByName = "determineProfileType")
     @Mapping(target = "resumes", ignore = true)
     @Mapping(target = "languages", ignore = true)
     @Mapping(target = "user", source = "user")
+    @Mapping(target = "company", source = "dto.companyId", qualifiedByName = "mapCompanyFromId")
     public abstract UserProfile toEntity(UserProfileRequestDTO dto, User user);
 
     @Mapping(target = "id", ignore = true)
@@ -37,6 +44,7 @@ public abstract class UserProfileMapper {
     @Mapping(target = "activityStatus", ignore = true)
     @Mapping(target = "profileType", ignore = true)
     @Mapping(target = "photoUrl", ignore = true)
+    @Mapping(target = "company", source = "dto.companyId", qualifiedByName = "mapCompanyFromId")
     public abstract void updateEntityFromDto(UserProfileRequestDTO dto, @MappingTarget UserProfile userProfile);
 
     public abstract UserProfileResponseDTO toDto(UserProfile userProfile);
@@ -69,5 +77,13 @@ public abstract class UserProfileMapper {
                     .toList();
             profile.getLanguages().addAll(languageSkills);
         }
+    }
+
+    @Named("mapCompanyFromId")
+    protected Company mapCompanyFromId(Long companyId) {
+        if (companyId == null) {
+            return null;
+        }
+        return repositoryHelper.findCompanyById(companyId);
     }
 }

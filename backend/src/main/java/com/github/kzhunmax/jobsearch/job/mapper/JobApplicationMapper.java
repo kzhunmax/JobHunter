@@ -10,7 +10,7 @@ public interface JobApplicationMapper {
 
     @Mapping(target = "jobId", source = "job.id")
     @Mapping(target = "jobTitle", source = "job.title")
-    @Mapping(target = "company", source = "job.company")
+    @Mapping(target = "company", source = "job.company.name")
     @Mapping(target = "candidateEmail", source = "candidate.email")
     @Mapping(target = "resumeUrl", source = "resume.fileUrl")
     @Mapping(target = "status", expression = "java(application.getStatus() != null ? application.getStatus().name() : null)")

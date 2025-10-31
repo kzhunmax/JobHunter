@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 public interface JobDocumentMapper {
 
     @Mapping(target = "active", source = "active")
+    @Mapping(target = "company", source = "job.company.name")
     JobDocument toDocument(Job job);
 
 }

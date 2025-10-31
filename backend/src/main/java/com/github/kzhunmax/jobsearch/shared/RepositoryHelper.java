@@ -1,5 +1,7 @@
 package com.github.kzhunmax.jobsearch.shared;
 
+import com.github.kzhunmax.jobsearch.company.model.Company;
+import com.github.kzhunmax.jobsearch.company.repository.CompanyRepository;
 import com.github.kzhunmax.jobsearch.exception.*;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
@@ -23,6 +25,7 @@ public class RepositoryHelper {
     private final UserProfileRepository userProfileRepository;
     private final JobApplicationRepository jobApplicationRepository;
     private final ResumeRepository resumeRepository;
+    private final CompanyRepository companyRepository;
 
     public User findUserById(Long userId) {
         return userRepository.findById(userId)
@@ -47,5 +50,10 @@ public class RepositoryHelper {
     public Resume findResumeById(Long resumeId) {
         return resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new ResumeNotFoundException(resumeId));
+    }
+
+    public Company findCompanyById(Long companyId) {
+        return companyRepository.findById(companyId)
+                .orElseThrow(() -> new CompanyNotFoundException(companyId));
     }
 }

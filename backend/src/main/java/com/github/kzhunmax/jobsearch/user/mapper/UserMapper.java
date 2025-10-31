@@ -23,6 +23,13 @@ public abstract class UserMapper {
     @Mapping(target = "email", expression = "java(dto.email().trim())")
     @Mapping(target = "jobs", ignore = true)
     @Mapping(target = "applications", ignore = true)
+    @Mapping(target = "resetPasswordToken", ignore = true)
+    @Mapping(target = "resetPasswordTokenExpiry", ignore = true)
+    @Mapping(target = "emailVerified", ignore = true)
+    @Mapping(target = "emailVerifyToken", ignore = true)
+    @Mapping(target = "profile", ignore = true)
+    @Mapping(target = "pricingPlan", ignore = true)
+    @Mapping(target = "apiKey", ignore = true)
     public abstract User toEntity(UserRegistrationDTO dto, Set<Role> roles);
 
     public abstract UserResponseDTO toDto(User user);

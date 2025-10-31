@@ -62,7 +62,6 @@ public class JobService {
         log.info("Request [{}]: Updating job - jobId={}", requestId, jobId);
         Job job = repositoryHelper.findJobById(jobId);
         jobMapper.updateEntityFromDto(dto, job);
-
         Job updatedJob = jobRepository.save(job);
         log.info("Request [{}]: Job updated successfully - jobId={}", requestId, jobId);
         jobSyncService.syncJob(updatedJob);

@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.job.model;
 
+import com.github.kzhunmax.jobsearch.company.model.Company;
 import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import jakarta.persistence.*;
@@ -27,8 +28,9 @@ public class Job extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private String company;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 
     @Column(nullable = false)
     private String location;

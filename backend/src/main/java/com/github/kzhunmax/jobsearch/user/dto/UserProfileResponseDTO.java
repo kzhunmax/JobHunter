@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.user.dto;
 
+import com.github.kzhunmax.jobsearch.company.dto.CompanyResponseDTO;
 import com.github.kzhunmax.jobsearch.shared.enums.Country;
 import com.github.kzhunmax.jobsearch.shared.enums.ExperienceLevel;
 import com.github.kzhunmax.jobsearch.shared.enums.WorkFormat;
@@ -51,6 +52,9 @@ public record UserProfileResponseDTO(
         List<LanguageSkillResponseDTO> languages,
 
         @Schema(description = "List of user's resumes")
-        List<ResumeSummaryDTO> resumes
+        List<ResumeSummaryDTO> resumes,
+
+        @Schema(description = "Company details (for recruiters)", nullable = true)
+        CompanyResponseDTO company
 ) {
 }
