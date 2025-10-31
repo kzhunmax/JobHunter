@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +70,10 @@ public class AuthService {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Authenticating user - email={}", requestId, email);
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        if (!userDetails.isEnabled()) {
+            log.warn("Request [{}]: Authentication rejected - account disabled (email unverified): {}", requestId, email);
+            throw new DisabledException("Please verify your email address before logging in. Check your inbox for the verification link, or use the 'Resend Verification' option.");
+        }
         log.info("Request [{}]: User authenticated successfully - email={}", requestId, email);
         return issueTokens(userDetails, response);
     }

@@ -4,8 +4,6 @@ import com.github.kzhunmax.jobsearch.user.dto.ResumeSummaryDTO;
 import com.github.kzhunmax.jobsearch.user.model.Resume;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
 @Mapper(componentModel = "spring")
 public interface ResumeMapper {
 
