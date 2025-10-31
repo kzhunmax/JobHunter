@@ -1,10 +1,10 @@
 package com.github.kzhunmax.jobsearch.payment.controller;
 
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
-import com.github.kzhunmax.jobsearch.security.PricingPlan;
+import com.github.kzhunmax.jobsearch.payment.CheckoutSessionResponse;
+import com.github.kzhunmax.jobsearch.payment.service.PaymentService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
-import com.github.kzhunmax.jobsearch.user.model.User;
-import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
+import com.stripe.exception.StripeException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -22,25 +20,39 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Payments", description = "Endpoints for managing user subscriptions (Portfolio Stub)")
+@Tag(name = "Payments", description = "Endpoints for managing user subscriptions")
 public class PaymentController {
 
-    private final UserRepository userRepository;
+    private final PaymentService paymentService;
 
-    @PostMapping("/upgrade-premium")
-    @Operation(summary = "Simulate upgrading to Premium",
-            description = "This is a portfolio stub. It simulates a successful payment and upgrades the user's account.")
-    public ResponseEntity<ApiResponse<String>> upgradeToPremium(
-            @AuthenticationPrincipal UserDetailsImpl userDetails
+    @PostMapping("/webhook")
+    @Operation(summary = "Stripe webhook endpoint", description = "Listens for events from Stripe (e.g., payment success)")
+    public ResponseEntity<String> handleStripeWebhook(
+            @RequestBody String payload,
+            @RequestHeader("Stripe-Signature") String sigHeader
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        User user = userDetails.getUser();
+        return paymentService.handleWebhook(payload, sigHeader, requestId);
+    }
 
-        user.setPricingPlan(PricingPlan.PREMIUM);
-        userRepository.save(user);
+    @PostMapping("/create-checkout-session")
+    @Operation(summary = "Create a Stripe Checkout session to upgrade to Premium",
+            description = "Creates a Stripe session and returns a URL for the user to complete payment.")
+    public ResponseEntity<ApiResponse<CheckoutSessionResponse>> createCheckoutSession(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) throws StripeException {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        CheckoutSessionResponse response = paymentService.createCheckoutSession(userDetails.getUser(), requestId);
+        return ApiResponse.success(response, requestId);
+    }
 
-        log.info("Request [{}]: User {} upgraded to PREMIUM", requestId, user.getEmail());
+    @RequestMapping("/success")
+    public String paymentSuccess() {
+        return "Payment Successful! Your account will be upgraded shortly.";
+    }
 
-        return ApiResponse.success("Account successfully upgraded to PREMIUM.", requestId);
+    @RequestMapping("/cancel")
+    public String paymentCancel() {
+        return "Payment Canceled. You have not been charged.";
     }
 }

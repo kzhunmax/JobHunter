@@ -66,3 +66,7 @@ app:
   backend:
     url:
       http://localhost:8080
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  premium-price-id: ${STRIPE_PREMIUM_PRICE_ID}
