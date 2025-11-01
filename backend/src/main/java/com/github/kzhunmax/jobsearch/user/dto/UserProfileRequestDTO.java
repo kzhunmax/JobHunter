@@ -36,21 +36,17 @@ public record UserProfileRequestDTO(
         String city,
 
         @Schema(description = "User's desired job title or current position", example = "Senior Java Developer")
-        @NotBlank(message = "Position is required")
         String position,
 
 
         @Schema(description = "User's level of experience", example = "FIVE_YEARS")
-        @NotNull(message = "Experience is required")
         ExperienceLevel experience,
 
 
         @Schema(description = "Desired work mode", example = "FULL_TIME")
-        @NotNull(message = "Work mode is required")
         WorkMode workMode,
 
         @Schema(description = "Desired work format", example = "REMOTE")
-        @NotNull(message = "Work format is required")
         WorkFormat format,
 
         @Schema(description = "URL to the user's portfolio or personal website", example = "https://myportfolio.com")

@@ -55,6 +55,7 @@ public class JobApplicationService {
         Job job = repositoryHelper.findJobById(jobId);
         User candidate = repositoryHelper.findUserById(userId);
         UserProfile candidateProfile = repositoryHelper.findUserProfileByUserId(userId);
+        jobApplicationValidator.validateCandidateProfileIsComplete(candidateProfile, requestId);
         jobApplicationValidator.validateNoDuplicateApplication(job, candidate);
         fileValidator.validateResume(resumeFile);
         String resumeUrl = fileStorageService.uploadFileToSupabase(resumeFile, userId, requestId);

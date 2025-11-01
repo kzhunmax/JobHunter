@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.job.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
@@ -88,7 +89,7 @@ public class JobApplicationController {
             JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, userId, requestDto.coverLetter(), resume);
             log.info("User '{}' successfully applied to job id={} | applicationId={}", userId, jobId, responseDto.id());
             return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.error("Failed to parse request JSON for user {}: {}", userId, e.getMessage());
             throw new IllegalArgumentException("Invalid JSON in request part: " + e.getMessage());
         }
