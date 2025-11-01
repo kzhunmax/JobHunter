@@ -1,7 +1,5 @@
 package com.github.kzhunmax.jobsearch.job.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.job.service.JobApplicationService;
@@ -14,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -26,7 +25,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -38,9 +36,8 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 public class JobApplicationController {
 
     private final JobApplicationService jobApplicationService;
-    private final ObjectMapper objectMapper;
 
-    @PostMapping(value = "/apply/{jobId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/apply/{jobId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('CANDIDATE')")
     @Operation(
             summary = "Apply to a job",
@@ -78,21 +75,15 @@ public class JobApplicationController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = JobApplicationRequestDTO.class))
             )
-            @RequestPart("request") String requestJson,
-            @Parameter(description = "CV file (PDF, max 5MB) - form part named 'cv'", required = true)
-            @RequestPart("resume") MultipartFile resume,
+            @Valid @RequestBody JobApplicationRequestDTO requestDto,
+
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long userId = userDetails.getId();
-        try {
-            JobApplicationRequestDTO requestDto = objectMapper.readValue(requestJson, JobApplicationRequestDTO.class);
-            log.info("User '{}' is applying to job with id={} | coverLetterLength={}", userId, jobId, requestDto.coverLetter().length());
-            JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, userId, requestDto.coverLetter(), resume);
-            log.info("User '{}' successfully applied to job id={} | applicationId={}", userId, jobId, responseDto.id());
-            return ApiResponse.success(responseDto, MDC.get(REQUEST_ID_MDC_KEY));
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse request JSON for user {}: {}", userId, e.getMessage());
-            throw new IllegalArgumentException("Invalid JSON in request part: " + e.getMessage());
-        }
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        log.info("User '{}' is applying to job with id={} | resumeId={}", userId, jobId, requestDto.resumeId());
+        JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, userId, requestDto);
+        log.info("User '{}' successfully applied to job id={} | applicationId={}", userId, jobId, responseDto.id());
+        return ApiResponse.success(responseDto, requestId);
     }
 
     @GetMapping(value = "/job/{jobId}", produces = MediaType.APPLICATION_JSON_VALUE)

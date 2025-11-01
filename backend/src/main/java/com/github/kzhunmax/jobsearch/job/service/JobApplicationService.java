@@ -1,19 +1,18 @@
 package com.github.kzhunmax.jobsearch.job.service;
 
+import com.github.kzhunmax.jobsearch.exception.ResumeOwnershipException;
+import com.github.kzhunmax.jobsearch.job.dto.JobApplicationRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobApplicationResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobApplicationMapper;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.job.validator.JobApplicationValidator;
-import com.github.kzhunmax.jobsearch.shared.validator.FileValidator;
-import com.github.kzhunmax.jobsearch.shared.FileStorageService;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.user.model.Resume;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.model.UserProfile;
-import com.github.kzhunmax.jobsearch.user.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -27,7 +26,8 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Objects;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -36,12 +36,9 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 @RequiredArgsConstructor
 public class JobApplicationService {
     private final JobApplicationRepository jobApplicationRepository;
-    private final ResumeRepository resumeRepository;
     private final JobApplicationMapper jobApplicationMapper;
     private final RepositoryHelper repositoryHelper;
-    private final FileStorageService fileStorageService;
     private final JobApplicationValidator jobApplicationValidator;
-    private final FileValidator fileValidator;
 
 
     @Caching(evict = {
@@ -49,7 +46,7 @@ public class JobApplicationService {
             @CacheEvict(value = "applicationByCandidate", allEntries = true)
     })
     @Transactional
-    public JobApplicationResponseDTO applyToJob(Long jobId, Long userId, String coverLetter, MultipartFile resumeFile) {
+    public JobApplicationResponseDTO applyToJob(Long jobId, Long userId, JobApplicationRequestDTO requestDto) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Applying to job - jobId={}, userId={}", requestId, jobId, userId);
         Job job = repositoryHelper.findJobById(jobId);
@@ -57,10 +54,12 @@ public class JobApplicationService {
         UserProfile candidateProfile = repositoryHelper.findUserProfileByUserId(userId);
         jobApplicationValidator.validateCandidateProfileIsComplete(candidateProfile, requestId);
         jobApplicationValidator.validateNoDuplicateApplication(job, candidate);
-        fileValidator.validateResume(resumeFile);
-        String resumeUrl = fileStorageService.uploadFileToSupabase(resumeFile, userId, requestId);
-        Resume resume = createAndSaveResume(resumeFile, resumeUrl, candidateProfile);
-        JobApplication application = createAndSaveApplication(job, candidate, coverLetter, resume);
+        Resume resume = repositoryHelper.findResumeById(requestDto.resumeId());
+        if (!Objects.equals(resume.getUserProfile().getUser().getId(), userId)) {
+            log.warn("Request [{}]: User ID={} attempted to apply with resume ID={} which they do not own.", requestId, userId, resume.getId());
+            throw new ResumeOwnershipException();
+        }
+        JobApplication application = createAndSaveApplication(job, candidate, requestDto.coverLetter(), resume);
         log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
         return jobApplicationMapper.toDto(application);
     }
@@ -116,22 +115,13 @@ public class JobApplicationService {
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
-    private Resume createAndSaveResume(MultipartFile resumeFile, String resumeUrl, UserProfile userProfile) {
-        Resume resume = Resume.builder()
-                .title(resumeFile.getOriginalFilename())
-                .fileUrl(resumeUrl)
-                .userProfile(userProfile)
-                .build();
-        return resumeRepository.save(resume);
-    }
-
-    private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter, Resume resumeFile) {
+    private JobApplication createAndSaveApplication(Job job, User candidate, String coverLetter, Resume resume) {
         JobApplication application = JobApplication.builder()
                 .job(job)
                 .candidate(candidate)
                 .status(ApplicationStatus.APPLIED)
                 .coverLetter(coverLetter)
-                .resume(resumeFile)
+                .resume(resume)
                 .build();
 
         return jobApplicationRepository.save(application);
