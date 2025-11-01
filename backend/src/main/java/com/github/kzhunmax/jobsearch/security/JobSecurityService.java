@@ -24,7 +24,7 @@ public class JobSecurityService {
     public boolean isJobOwner(Long jobId, Authentication authentication) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.debug("Request [{}]: Checking job ownership - jobId={}", requestId, jobId);
-        if (isAuthenticated(authentication)) {
+        if (isUnauthenticated(authentication)) {
             log.debug("Request [{}]: Job ownership check failed - not authenticated", requestId);
             return false;
         }
@@ -38,7 +38,7 @@ public class JobSecurityService {
     public boolean canUpdateApplication(Long applicationId, ApplicationStatus status, Authentication authentication) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.debug("Request [{}]: Checking application update permission - appId={}, status={}", requestId, applicationId, status);
-        if (isAuthenticated(authentication)) {
+        if (isUnauthenticated(authentication)) {
             log.debug("Request [{}]: Application update permission failed - not authenticated", requestId);
             return false;
         }
@@ -65,7 +65,7 @@ public class JobSecurityService {
         return false;
     }
 
-    private boolean isAuthenticated(Authentication authentication) {
+    private boolean isUnauthenticated(Authentication authentication) {
         return authentication == null || !authentication.isAuthenticated();
     }
 
