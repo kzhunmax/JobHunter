@@ -18,6 +18,7 @@ import com.github.kzhunmax.jobsearch.user.mapper.UserMapper;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.user.validator.UserRegistrationValidator;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -180,5 +181,14 @@ public class AuthService {
                 });
 
         log.info("Request [{}]: Resend verification request processed for email={}", requestId, email);
+    }
+
+    public String getClientIp(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forward-For");
+        if (xfHeader == null || xfHeader.isEmpty()) {
+            return request.getRemoteAddr();
+        }
+
+        return xfHeader.split(",")[0].trim();
     }
 }

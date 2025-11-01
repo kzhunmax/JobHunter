@@ -120,7 +120,7 @@ public class AuthController {
             HttpServletRequest request
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        String ipAddress = request.getRemoteAddr();
+        String ipAddress = authService.getClientIp(request);
 
         rateLimitingService.consumeToken(ipAddress, PricingPlan.FREE, "IP_ADDRESS");
         log.info("Request [{}]: Login attempt for email={}", requestId, loginDto.email());
