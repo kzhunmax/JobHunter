@@ -70,7 +70,7 @@ public class AuthService {
     public JwtResponse authenticate(String email, HttpServletResponse response) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Authenticating user - email={}", requestId, email);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email.toLowerCase());
         if (!userDetails.isEnabled()) {
             log.warn("Request [{}]: Authentication rejected - account disabled (email unverified): {}", requestId, email);
             throw new DisabledException("Please verify your email address before logging in. Check your inbox for the verification link, or use the 'Resend Verification' option.");

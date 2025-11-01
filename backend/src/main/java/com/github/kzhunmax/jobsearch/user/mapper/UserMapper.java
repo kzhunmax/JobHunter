@@ -20,7 +20,7 @@ public abstract class UserMapper {
 
     @Mapping(target = "password", source = "dto.password", qualifiedByName = "encodePassword")
     @Mapping(target = "provider", constant = "LOCAL")
-    @Mapping(target = "email", expression = "java(dto.email().trim())")
+    @Mapping(target = "email", expression = "java(dto.email().trim().toLowerCase())")
     @Mapping(target = "jobs", ignore = true)
     @Mapping(target = "applications", ignore = true)
     @Mapping(target = "resetPasswordToken", ignore = true)

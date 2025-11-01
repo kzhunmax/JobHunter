@@ -33,7 +33,7 @@ public class RepositoryHelper {
     }
 
     public UserProfile findUserProfileByUserId(Long userId) {
-        return userProfileRepository.findById(userId)
+        return userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new UserProfileNotFound(userId));
     }
 

@@ -36,7 +36,7 @@ public class UserRegistrationValidator {
     }
 
     private void validateEmailUniqueness(UserRegistrationDTO dto) {
-        String email = dto.email().trim();
+        String email = dto.email().trim().toLowerCase();
         if (userRepository.existsByEmail(email)) {
             throw new EmailExistsException(email);
         }
