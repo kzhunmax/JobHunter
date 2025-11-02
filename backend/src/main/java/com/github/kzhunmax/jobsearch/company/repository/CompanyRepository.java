@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface CompanyRepository extends JpaRepository<Company, Long> {
-    boolean existsCompanyByName(String name);
-    Optional<Company> findCompanyByName(String name);
+    boolean existsCompanyByNormalizedName(String normalizedName);
+    Optional<Company> findCompanyByNormalizedName(String normalizedName);
 }

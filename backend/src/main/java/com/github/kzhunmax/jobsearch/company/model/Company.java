@@ -3,10 +3,7 @@ package com.github.kzhunmax.jobsearch.company.model;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import com.github.kzhunmax.jobsearch.user.model.UserProfile;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.HashSet;
@@ -23,6 +20,9 @@ public class Company extends BaseEntity {
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    @Column(name = "normalized_name", unique = true)
+    private String normalizedName;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -42,4 +42,19 @@ public class Company extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "company")
     private Set<Job> jobs = new HashSet<>();
+
+    @Override
+    protected void onSave() {
+        this.normalizedName = normalize(this.name);
+    }
+
+    public static String normalize(String name) {
+        if (name == null) return null;
+
+        return name.toLowerCase()
+                .replaceAll("[,.']", "")
+                .replaceAll("\\s+(inc|llc|ltd|corp|corporation)$", "")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
 }

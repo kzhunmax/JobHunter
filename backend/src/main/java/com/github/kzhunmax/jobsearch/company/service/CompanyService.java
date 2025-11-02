@@ -36,7 +36,8 @@ public class CompanyService {
     public CompanyResponseDTO createCompany(CompanyRequestDTO dto) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Creating company - name={}", requestId, dto.name());
-        if (companyRepository.existsCompanyByName(dto.name())) {
+        String normalizedName = Company.normalize(dto.name());
+        if (companyRepository.existsCompanyByNormalizedName(normalizedName)) {
             throw new CompanyAlreadyExistsException(dto.name());
         }
         Company company = companyMapper.toEntity(dto);
@@ -50,7 +51,8 @@ public class CompanyService {
         log.info("Request [{}]: Updating company - companyId={}", requestId, companyId);
         Company company = repositoryHelper.findCompanyById(companyId);
 
-        companyRepository.findCompanyByName(dto.name()).ifPresent(existing -> {
+        String normalizedName = Company.normalize(dto.name());
+        companyRepository.findCompanyByNormalizedName(normalizedName).ifPresent(existing -> {
             if (!existing.getId().equals(companyId)) {
                 throw new CompanyAlreadyExistsException(dto.name());
             }
