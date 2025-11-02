@@ -14,4 +14,8 @@ public record UserLoginDTO(
         @NotBlank(message = "Password is required")
         String password
 ) {
+    public UserLoginDTO(String email, String password) {
+        this.email = (email != null) ? email.trim().toLowerCase() : null;
+        this.password = password;
+    }
 }

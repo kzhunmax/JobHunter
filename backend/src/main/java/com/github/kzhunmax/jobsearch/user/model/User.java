@@ -79,4 +79,11 @@ public class User extends BaseEntity {
             this.apiKey = "js_key_" + UUID.randomUUID().toString().replace("-", "");
         }
     }
+
+    @Override
+    protected void onSave() {
+        if (email != null) {
+            email = email.toLowerCase();
+        }
+    }
 }

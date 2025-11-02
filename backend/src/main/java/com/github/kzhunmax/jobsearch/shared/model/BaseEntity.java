@@ -25,11 +25,14 @@ public abstract class BaseEntity {
     protected void onCreate() {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+        onSave();
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = Instant.now();
+        onSave();
     }
 
+    protected void onSave() {}
 }

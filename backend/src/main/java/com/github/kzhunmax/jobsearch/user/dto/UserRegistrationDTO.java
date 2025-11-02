@@ -24,6 +24,14 @@ public record UserRegistrationDTO(
         @Schema(description = "Roles of user in system", allowableValues = {"ROLE_CANDIDATE", "ROLE_RECRUITER", "ROLE_ADMIN"})
         @NotEmpty Set<Role> roles
 ) {
+
+    public UserRegistrationDTO(String email, String password, String confirmPassword, Set<Role> roles) {
+        this.email = (email != null) ? email.trim().toLowerCase() : null;
+        this.password = password;
+        this.confirmPassword = confirmPassword;
+        this.roles = roles;
+    }
+
     public boolean isPasswordConfirmed() {
         return password != null && password.equals(confirmPassword);
     }

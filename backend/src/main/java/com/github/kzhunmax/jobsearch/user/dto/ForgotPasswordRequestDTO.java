@@ -11,4 +11,8 @@ public record ForgotPasswordRequestDTO(
         @Email(message = "Invalid email format")
         String email
 ) {
+
+    public ForgotPasswordRequestDTO(String email) {
+        this.email = (email != null) ? email.trim().toLowerCase() : null;
+    }
 }
