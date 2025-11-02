@@ -1,9 +1,13 @@
 package com.github.kzhunmax.jobsearch.user.service;
 
+import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
+import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.job.service.JobSyncService;
 import com.github.kzhunmax.jobsearch.shared.FileStorageService;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
+import com.github.kzhunmax.jobsearch.shared.enums.ProfileType;
 import com.github.kzhunmax.jobsearch.shared.validator.FileValidator;
 import com.github.kzhunmax.jobsearch.user.dto.UserProfileRequestDTO;
 import com.github.kzhunmax.jobsearch.user.dto.UserProfileResponseDTO;
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
@@ -34,6 +39,8 @@ public class UserProfileService {
     private final FileStorageService fileStorageService;
     private final FileValidator fileValidator;
     private final JobApplicationRepository jobApplicationRepository;
+    private final JobRepository jobRepository;
+    private final JobSyncService jobSyncService;
 
     public UserProfileResponseDTO getUserProfileByUserId(Long userId) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
@@ -67,16 +74,38 @@ public class UserProfileService {
     public void deleteProfile(Long userId) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("Request [{}]: Deleting user profile - userId={}", requestId, userId);
+
         User user = repositoryHelper.findUserById(userId);
         UserProfile profile = repositoryHelper.findUserProfileByUserId(userId);
-        List<JobApplication> applications = jobApplicationRepository.findAllByCandidate(user);
-        if (!applications.isEmpty()) {
-            log.debug("Request [{}]: Deleting {} job applications for user {}", requestId, applications.size(), userId);
-            jobApplicationRepository.deleteAllInBatch(applications);
-            user.getApplications().clear();
+
+        if (profile.getProfileType() == ProfileType.RECRUITER) {
+            deactivateRecruiterJobs(user, requestId);
         }
+        deleteCandidateApplications(user, requestId);
+
         userProfileRepository.delete(profile);
         log.info("Request [{}]: User profile deleted successfully - userId={}", requestId, userId);
+    }
+
+    private void deactivateRecruiterJobs(User user, String requestId) {
+        Set<Job> jobs = user.getJobs();
+        if (!jobs.isEmpty()) {
+            jobs.forEach(job -> {
+                job.setActive(false);
+                jobSyncService.deleteJob(job.getId());
+            });
+            jobRepository.saveAll(jobs);
+            log.info("Request [{}]: Deactivated {} jobs for recruiter user {}", requestId, jobs.size(), user.getId());
+        }
+    }
+
+    private void deleteCandidateApplications(User user, String requestId) {
+        List<JobApplication> applications = jobApplicationRepository.findAllByCandidate(user);
+        if (!applications.isEmpty()) {
+            jobApplicationRepository.deleteAllInBatch(applications);
+            user.getApplications().clear();
+            log.debug("Request [{}]: Deleted {} job applications for user {}", requestId, applications.size(), user.getId());
+        }
     }
 
     public String uploadProfilePhoto(MultipartFile file, Long userId) {
