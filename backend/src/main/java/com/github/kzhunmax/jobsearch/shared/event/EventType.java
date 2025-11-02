@@ -1,5 +1,5 @@
 package com.github.kzhunmax.jobsearch.shared.event;
 
 public enum EventType {
-    REGISTERED, VERIFIED
+    REGISTERED, VERIFIED, PASSWORD_RESET
 }

@@ -124,7 +124,7 @@ public class AuthController {
 
         rateLimitingService.consumeToken(ipAddress, PricingPlan.FREE, "IP_ADDRESS");
         log.info("Request [{}]: Login attempt for email={}", requestId, loginDto.email());
-        JwtResponse jwtResponse = authService.authenticate(loginDto.email(), response);
+        JwtResponse jwtResponse = authService.authenticate(loginDto.email().toLowerCase(), loginDto.password(), response);
         log.info("Request [{}]: Successful login for email={}", requestId, loginDto.email());
         return ApiResponse.success(jwtResponse, requestId);
     }
@@ -204,7 +204,7 @@ public class AuthController {
             @Valid @RequestBody ForgotPasswordRequestDTO dto
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        authService.forgotPassword(dto.email());
+        authService.forgotPassword(dto.email().toLowerCase());
         return ApiResponse.success("A password reset link has been sent.", requestId);
     }
 
@@ -264,7 +264,7 @@ public class AuthController {
             @Valid @RequestBody ForgotPasswordRequestDTO dto
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        authService.resendVerification(dto.email());
+        authService.resendVerification(dto.email().toLowerCase());
         return ApiResponse.success("If an unverified account with this email exists, a new verification link has been sent.", requestId);
     }
 }

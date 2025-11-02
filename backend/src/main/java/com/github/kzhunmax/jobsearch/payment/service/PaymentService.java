@@ -8,7 +8,6 @@ import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
-import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
@@ -47,35 +46,24 @@ public class PaymentService {
     }
 
     public ResponseEntity<String> handleWebhook(String payload, String sigHeader, String requestId) {
-        Event event;
-
         try {
-            event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+            Event event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+            StripeObject stripeObject = event.getDataObjectDeserializer().getObject()
+                    .orElseThrow(() -> new RuntimeException("Failed to deserialize Stripe event data"));
+
+            if (event.getType().equals("checkout.session.completed")) {
+                handleCheckoutSessionCompleted((Session) stripeObject, requestId);
+            } else {
+                log.warn("Request [{}]: Unhandled Stripe event type: {}", requestId, event.getType());
+            }
+            return ResponseEntity.ok("Event Received");
         } catch (SignatureVerificationException e) {
             log.warn("Request [{}]: Stripe webhook signature verification failed.", requestId, e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Webhook Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Webhook Error: Signature verification failed");
         } catch (Exception e) {
-            log.warn("Request [{}]: Unexpected error verifying Stripe webhook signature.", requestId, e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Webhook Error: " + e.getMessage());
+            log.error("Request [{}]: Unexpected error processing Stripe webhook.", requestId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Webhook Error: " + e.getMessage());
         }
-
-        EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
-
-        if (dataObjectDeserializer.getObject().isEmpty()) {
-            log.error("Request [{}]: Failed to deserialize Stripe event data", requestId);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Webhook Error: Deserialization failed");
-        }
-
-        StripeObject stripeObject = dataObjectDeserializer.getObject().get();
-
-        if (event.getType().equals("checkout.session.completed")) {
-            Session session = (Session) stripeObject;
-            handleCheckoutSessionCompleted(session, requestId);
-        } else {
-            log.warn("Request [{}]: Unhandled Stripe event type: {}", requestId, event.getType());
-        }
-
-        return new ResponseEntity<>("Event Received", HttpStatus.OK);
     }
 
     private void handleCheckoutSessionCompleted(Session session, String requestId) {
