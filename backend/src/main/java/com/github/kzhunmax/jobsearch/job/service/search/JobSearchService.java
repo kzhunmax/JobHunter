@@ -31,17 +31,18 @@ public class JobSearchService {
                                     .multiMatch(mm -> mm
                                             .query(query)
                                             .fields("title", "description")
+                                            .fuzziness("AUTO")
                                     )
                             );
 
                             // Filter by location if provided
                             if (location != null && !location.isBlank()) {
-                                b.filter(f -> f.term(t -> t.field("location").value(location)));
+                                b.filter(f -> f.match(t -> t.field("location").query(location)));
                             }
 
                             // Filter by company if provided
                             if (company != null && !company.isBlank()) {
-                                b.filter(f -> f.term(t -> t.field("company").value(company)));
+                                b.filter(f -> f.match(t -> t.field("company").query(company)));
                             }
 
                             // Always filter for active jobs
@@ -49,7 +50,8 @@ public class JobSearchService {
 
                             return b;
                         })
-                );
+                )
+                .withPageable(pageable);
 
         Query esQuery = nativeQueryBuilder.build();
         SearchHits<JobDocument> searchHits = elasticsearchOperations.search(esQuery, JobDocument.class);

@@ -1,5 +1,6 @@
 package com.github.kzhunmax.jobsearch.job.service;
 
+import com.github.kzhunmax.jobsearch.event.producer.UserEventProducer;
 import com.github.kzhunmax.jobsearch.job.dto.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobMapper;
@@ -8,6 +9,8 @@ import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
+import com.github.kzhunmax.jobsearch.shared.event.JobSyncEvent;
+import com.github.kzhunmax.jobsearch.shared.event.SyncAction;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +35,8 @@ import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_I
 public class JobService {
     private final JobRepository jobRepository;
     private final RepositoryHelper repositoryHelper;
-    private final JobSyncService jobSyncService;
     private final JobMapper jobMapper;
+    private final UserEventProducer eventProducer;
 
     @Transactional
     public JobResponseDTO createJob(JobRequestDTO dto, Long userId) {
@@ -43,7 +46,7 @@ public class JobService {
         Job job = jobMapper.toEntity(dto, user);
         Job savedJob = jobRepository.save(job);
         log.info("Request [{}]: Job created successfully - jobId={}", requestId, savedJob.getId());
-        jobSyncService.syncJob(savedJob);
+        eventProducer.sendJobSyncEvent(new JobSyncEvent(savedJob.getId(), SyncAction.UPSERT));
         return jobMapper.toDto(savedJob);
     }
 
@@ -66,7 +69,7 @@ public class JobService {
         jobMapper.updateEntityFromDto(dto, job);
         Job updatedJob = jobRepository.save(job);
         log.info("Request [{}]: Job updated successfully - jobId={}", requestId, jobId);
-        jobSyncService.syncJob(updatedJob);
+        eventProducer.sendJobSyncEvent(new JobSyncEvent(updatedJob.getId(), SyncAction.UPSERT));
         return jobMapper.toDto(updatedJob);
     }
 
@@ -87,7 +90,7 @@ public class JobService {
         }
         jobRepository.save(job);
         log.info("Request [{}]: Job deleted successfully - jobId={}", requestId, jobId);
-        jobSyncService.deleteJob(job.getId());
+        eventProducer.sendJobSyncEvent(new JobSyncEvent(job.getId(), SyncAction.DELETE));
     }
 
     @Transactional(readOnly = true)

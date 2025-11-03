@@ -72,4 +72,12 @@ public class KafkaConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic jobSyncTopic() {
+        return TopicBuilder.name("job-sync-event")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }

@@ -1,13 +1,15 @@
 package com.github.kzhunmax.jobsearch.user.service;
 
+import com.github.kzhunmax.jobsearch.event.producer.UserEventProducer;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobApplicationRepository;
 import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
-import com.github.kzhunmax.jobsearch.job.service.JobSyncService;
 import com.github.kzhunmax.jobsearch.shared.FileStorageService;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ProfileType;
+import com.github.kzhunmax.jobsearch.shared.event.JobSyncEvent;
+import com.github.kzhunmax.jobsearch.shared.event.SyncAction;
 import com.github.kzhunmax.jobsearch.shared.validator.FileValidator;
 import com.github.kzhunmax.jobsearch.user.dto.UserProfileRequestDTO;
 import com.github.kzhunmax.jobsearch.user.dto.UserProfileResponseDTO;
@@ -40,7 +42,7 @@ public class UserProfileService {
     private final FileValidator fileValidator;
     private final JobApplicationRepository jobApplicationRepository;
     private final JobRepository jobRepository;
-    private final JobSyncService jobSyncService;
+    private final UserEventProducer eventProducer;
 
     public UserProfileResponseDTO getUserProfileByUserId(Long userId) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
@@ -92,7 +94,7 @@ public class UserProfileService {
         if (!jobs.isEmpty()) {
             jobs.forEach(job -> {
                 job.setActive(false);
-                jobSyncService.deleteJob(job.getId());
+                eventProducer.sendJobSyncEvent(new JobSyncEvent(job.getId(), SyncAction.DELETE));
             });
             jobRepository.saveAll(jobs);
             log.info("Request [{}]: Deactivated {} jobs for recruiter user {}", requestId, jobs.size(), user.getId());
