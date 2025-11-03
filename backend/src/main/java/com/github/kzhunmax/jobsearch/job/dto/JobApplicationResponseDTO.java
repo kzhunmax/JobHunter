@@ -20,6 +20,9 @@ public record JobApplicationResponseDTO(
         @Schema(description = "Email of the applicant")
         String candidateEmail,
 
+        @Schema(description = "ID of the applicant's user profile")
+        Long candidateProfileId,
+
         @Schema(description = "Current application status", allowableValues = {"APPLIED", "UNDER_REVIEW", "INTERVIEWED", "REJECTED", "OFFERED", "ACCEPTED"})
         String status,
 

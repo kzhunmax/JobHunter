@@ -4,8 +4,10 @@ import com.github.kzhunmax.jobsearch.job.dto.JobRequestDTO;
 import com.github.kzhunmax.jobsearch.job.dto.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.job.mapper.JobMapper;
 import com.github.kzhunmax.jobsearch.job.model.Job;
+import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.job.repository.JobRepository;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
+import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +78,13 @@ public class JobService {
 
         Job job = repositoryHelper.findJobById(jobId);
         job.setActive(false);
+
+        log.info("Request [{}]: Deactivating job - jobId={}. Updating open applications to REJECTED.", requestId, jobId);
+        for (JobApplication application : job.getApplications()) {
+            if (application.getStatus() == ApplicationStatus.APPLIED || application.getStatus() == ApplicationStatus.UNDER_REVIEW) {
+                application.setStatus(ApplicationStatus.REJECTED);
+            }
+        }
         jobRepository.save(job);
         log.info("Request [{}]: Job deleted successfully - jobId={}", requestId, jobId);
         jobSyncService.deleteJob(job.getId());
