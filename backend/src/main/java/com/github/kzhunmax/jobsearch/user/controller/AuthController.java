@@ -205,7 +205,6 @@ public class AuthController {
     ) {
         String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         authService.forgotPassword(dto.email());
-        authService.forgotPassword(dto.email());
         return ApiResponse.success("A password reset link has been sent.", requestId);
     }
 

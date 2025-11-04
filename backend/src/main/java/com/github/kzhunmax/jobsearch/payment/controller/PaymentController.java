@@ -46,12 +46,12 @@ public class PaymentController {
         return ApiResponse.success(response, requestId);
     }
 
-    @RequestMapping("/success")
+    @GetMapping("/success")
     public String paymentSuccess() {
         return "Payment Successful! Your account will be upgraded shortly.";
     }
 
-    @RequestMapping("/cancel")
+    @GetMapping("/cancel")
     public String paymentCancel() {
         return "Payment Canceled. You have not been charged.";
     }

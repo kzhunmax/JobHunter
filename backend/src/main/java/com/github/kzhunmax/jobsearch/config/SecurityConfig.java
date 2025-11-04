@@ -47,7 +47,9 @@ public class SecurityConfig {
                                 "/error",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/api/payments/webhook"
+                                "/api/payments/webhook",
+                                "/api/payments/success",
+                                "/api/payments/cancel"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/jobs/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/user/**").permitAll()
