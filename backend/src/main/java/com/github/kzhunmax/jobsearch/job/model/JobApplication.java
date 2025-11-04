@@ -6,6 +6,7 @@ import com.github.kzhunmax.jobsearch.user.model.Resume;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 
@@ -15,7 +16,7 @@ import java.time.Instant;
 })
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 public class JobApplication extends BaseEntity {

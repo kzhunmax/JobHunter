@@ -5,6 +5,7 @@ import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -19,7 +20,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Job extends BaseEntity {
 
     @Column(nullable = false, length = 200)

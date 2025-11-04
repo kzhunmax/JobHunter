@@ -3,13 +3,14 @@ package com.github.kzhunmax.jobsearch.user.model;
 import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Table(name = "resumes")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Entity
 public class Resume extends BaseEntity {
 

@@ -5,6 +5,7 @@ import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import com.github.kzhunmax.jobsearch.shared.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 public class UserProfile extends BaseEntity {
 
     @Enumerated(EnumType.STRING)

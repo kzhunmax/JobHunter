@@ -5,6 +5,7 @@ import com.github.kzhunmax.jobsearch.shared.enums.Language;
 import com.github.kzhunmax.jobsearch.shared.enums.LanguageLevel;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "language_skills")
@@ -12,7 +13,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 public class LanguageSkill extends BaseEntity {
 
     @Enumerated(EnumType.STRING)

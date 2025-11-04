@@ -8,6 +8,7 @@ import com.github.kzhunmax.jobsearch.shared.enums.Role;
 import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class User extends BaseEntity {
 
     @Column(unique = true, nullable = false, length = 100)

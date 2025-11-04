@@ -5,6 +5,7 @@ import com.github.kzhunmax.jobsearch.shared.model.BaseEntity;
 import com.github.kzhunmax.jobsearch.user.model.UserProfile;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +16,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Company extends BaseEntity {
 
     @Column(nullable = false, unique = true)
