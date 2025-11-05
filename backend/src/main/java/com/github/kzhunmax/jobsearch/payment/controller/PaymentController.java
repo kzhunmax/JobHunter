@@ -9,12 +9,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -31,8 +28,7 @@ public class PaymentController {
             @RequestBody String payload,
             @RequestHeader("Stripe-Signature") String sigHeader
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        return paymentService.handleWebhook(payload, sigHeader, requestId);
+        return paymentService.handleWebhook(payload, sigHeader);
     }
 
     @PostMapping("/create-checkout-session")
@@ -41,9 +37,8 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<CheckoutSessionResponse>> createCheckoutSession(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) throws StripeException {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        CheckoutSessionResponse response = paymentService.createCheckoutSession(userDetails.getUser(), requestId);
-        return ApiResponse.success(response, requestId);
+        CheckoutSessionResponse response = paymentService.createCheckoutSession(userDetails.getUser());
+        return ApiResponse.success(response);
     }
 
     @GetMapping("/success")

@@ -6,12 +6,9 @@ import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @Service
 @RequiredArgsConstructor
@@ -22,24 +19,22 @@ public class JobSecurityService {
 
     @Transactional(readOnly = true)
     public boolean isJobOwner(Long jobId, Authentication authentication) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.debug("Request [{}]: Checking job ownership - jobId={}", requestId, jobId);
+        log.debug("Checking job ownership - jobId={}", jobId);
         if (isUnauthenticated(authentication)) {
-            log.debug("Request [{}]: Job ownership check failed - not authenticated", requestId);
+            log.debug("Job ownership check failed - not authenticated");
             return false;
         }
         Job job = repositoryHelper.findJobById(jobId);
         boolean isOwner = isJobOwner(job, getEmail(authentication));
-        log.debug("Request [{}]: Job ownership check completed - jobId={}, isOwner={}", requestId, jobId, isOwner);
+        log.debug("Job ownership check completed - jobId={}, isOwner={}", jobId, isOwner);
         return isOwner;
     }
 
     @Transactional(readOnly = true)
     public boolean canUpdateApplication(Long applicationId, ApplicationStatus status, Authentication authentication) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.debug("Request [{}]: Checking application update permission - appId={}, status={}", requestId, applicationId, status);
+        log.debug("Checking application update permission - appId={}, status={}", applicationId, status);
         if (isUnauthenticated(authentication)) {
-            log.debug("Request [{}]: Application update permission failed - not authenticated", requestId);
+            log.debug("Application update permission failed - not authenticated");
             return false;
         }
 
@@ -47,21 +42,21 @@ public class JobSecurityService {
         String email = getEmail(authentication);
 
         if (isAdmin(authentication)) {
-            log.debug("Request [{}]: Application update permitted - admin user", requestId);
+            log.debug("Application update permitted - admin user");
             return true;
         }
 
         if (isApplicationJobOwner(application, email)) {
-            log.debug("Request [{}]: Application update permitted - job owner", requestId);
+            log.debug("Application update permitted - job owner");
             return true;
         }
 
         if (isApplicationCandidate(application, email)) {
             boolean permitted = status == ApplicationStatus.REJECTED;
-            log.debug("Request [{}]: Application update permitted for candidate - permitted={}", requestId, permitted);
+            log.debug("Application update permitted for candidate - permitted={}", permitted);
             return permitted;
         }
-        log.debug("Request [{}]: Application update permission denied", requestId);
+        log.debug("Application update permission denied");
         return false;
     }
 

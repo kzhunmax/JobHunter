@@ -9,12 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
 @RequestMapping("/api/companies")
@@ -28,18 +25,16 @@ public class CompanyController {
     @GetMapping("/{companyId}")
     @Operation(summary = "Get company details by ID")
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> getCompany(@PathVariable Long companyId) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         CompanyResponseDTO company = companyService.getCompany(companyId);
-        return ApiResponse.success(company, requestId);
+        return ApiResponse.success(company);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('RECRUITER') or hasRole('ADMIN')")
     @Operation(summary = "Create a new company")
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> createCompany(@Valid @RequestBody CompanyRequestDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         CompanyResponseDTO company = companyService.createCompany(dto);
-        return ApiResponse.created(company, requestId);
+        return ApiResponse.created(company);
     }
 
     @PutMapping("/{companyId}")
@@ -48,8 +43,7 @@ public class CompanyController {
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(
             @PathVariable Long companyId,
             @Valid @RequestBody CompanyRequestDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         CompanyResponseDTO company = companyService.updateCompany(companyId, dto);
-        return ApiResponse.success(company, requestId);
+        return ApiResponse.success(company);
     }
 }

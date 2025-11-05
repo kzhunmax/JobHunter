@@ -27,14 +27,14 @@ public class FileStorageService {
     @Value("${supabase.bucket:resumes}")
     private String supabaseBucket;
 
-    public String uploadFileToSupabase(MultipartFile file, Long userId, String requestId) {
+    public String uploadFileToSupabase(MultipartFile file, Long userId) {
         try {
             String uuid = UUID.randomUUID().toString();
             String originalName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
             String fileName = uuid + "_" + StringUtils.getFilename(originalName);
             String path = "candidates/" + userId + "/" + fileName;
 
-            log.debug("Request [{}]: Uploading to Supabase S3 at path={}", requestId, path);
+            log.debug("Uploading to Supabase S3 at path={}", path);
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(supabaseBucket)
@@ -47,29 +47,29 @@ public class FileStorageService {
 
             String publicUrl = supabaseUrl + "/storage/v1/object/public/" + supabaseBucket + "/" + path;
 
-            log.info("Request [{}]: CV uploaded successfully to Supabase S3 - url={}", requestId, publicUrl);
+            log.info("CV uploaded successfully to Supabase S3 - url={}", publicUrl);
             return publicUrl;
 
         } catch (Exception e) {
-            log.error("Request [{}]: Failed to upload to Supabase S3 for userId={}", requestId, userId, e);
+            log.error("Failed to upload to Supabase S3 for userId={}", userId, e);
             throw new RuntimeException("Upload to Supabase S3 failed: " + e.getMessage());
         }
     }
 
-    public void deleteFileFromSupabase(String fileUrl, String requestId) {
+    public void deleteFileFromSupabase(String fileUrl) {
         if (fileUrl == null || fileUrl.isBlank()) {
-            log.debug("Request [{}]: No file URL provided, skipping deletion.", requestId);
+            log.debug("No file URL provided, skipping deletion.");
             return;
         }
 
         try {
             String baseUrlPrefix = supabaseUrl + "/storage/v1/object/public/" + supabaseBucket + "/";
             if (!fileUrl.startsWith(baseUrlPrefix)) {
-                log.warn("Request [{}]: File URL {} does not match the expected Supabase URL structure. Skipping deletion.", requestId, fileUrl);
+                log.warn("File URL {} does not match the expected Supabase URL structure. Skipping deletion.", fileUrl);
                 return;
             }
             String objectKey = fileUrl.substring(baseUrlPrefix.length());
-            log.debug("Request [{}]: Deleting file from Supabase S3 with key={}", requestId, objectKey);
+            log.debug("Deleting file from Supabase S3 with key={}", objectKey);
 
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                     .bucket(supabaseBucket)
@@ -78,9 +78,9 @@ public class FileStorageService {
 
             s3Client.deleteObject(deleteObjectRequest);
 
-            log.info("Request [{}]: File deleted successfully from Supabase S3 - key={}", requestId, objectKey);
+            log.info("File deleted successfully from Supabase S3 - key={}", objectKey);
         } catch (Exception e) {
-        log.warn("Request [{}]: Failed to delete file {} from Supabase S3. It might need manual cleanup.", requestId, fileUrl, e);
+        log.warn("Failed to delete file {} from Supabase S3. It might need manual cleanup.", fileUrl, e);
         }
     }
 }

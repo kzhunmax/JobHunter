@@ -18,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -29,8 +28,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -80,12 +77,11 @@ public class JobController {
             @Valid @RequestBody JobRequestDTO dto,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
-        log.info("Request [{}]: Creating job - userId={}", requestId, userId);
+        log.info("Creating job - userId={}", userId);
         JobResponseDTO job = jobService.createJob(dto, userId);
-        log.info("Request [{}]: Job created successfully - userId={}", requestId, userId);
-        return ApiResponse.created(job, requestId);
+        log.info("Job created successfully - userId={}", userId);
+        return ApiResponse.created(job);
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -104,11 +100,10 @@ public class JobController {
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
             PagedResourcesAssembler<JobResponseDTO> pagedAssembler
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Listing all active jobs - pageable={}", requestId, pageable);
+        log.info("Listing all active jobs - pageable={}", pageable);
         PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getAllActiveJobs(pageable, pagedAssembler);
-        log.info("Request [{}]: Active jobs listed successfully", requestId);
-        return ApiResponse.success(jobs, requestId);
+        log.info("Active jobs listed successfully");
+        return ApiResponse.success(jobs);
     }
 
     @GetMapping(value = "/{jobId}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -134,11 +129,10 @@ public class JobController {
     public ResponseEntity<ApiResponse<JobResponseDTO>> getJobById(
             @Parameter(description = "ID of the job", example = "1")
             @PathVariable Long jobId) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Getting job by ID - jobId={}", requestId, jobId);
+        log.info("Getting job by ID - jobId={}", jobId);
         JobResponseDTO job = jobService.getJobById(jobId);
-        log.info("Request [{}]: Job retrieved successfully - jobId={}", requestId, jobId);
-        return ApiResponse.success(job, requestId);
+        log.info("Job retrieved successfully - jobId={}", jobId);
+        return ApiResponse.success(job);
     }
 
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication)")
@@ -180,11 +174,10 @@ public class JobController {
                     content = @Content(schema = @Schema(implementation = JobRequestDTO.class))
             )
             @Valid @RequestBody JobRequestDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Updating job - jobId={}", requestId, jobId);
+        log.info("Updating job - jobId={}", jobId);
         JobResponseDTO updatedJob = jobService.updateJob(jobId, dto);
-        log.info("Request [{}]: Job updated successfully - jobId={}", requestId, jobId);
-        return ApiResponse.success(updatedJob, requestId);
+        log.info("Job updated successfully - jobId={}", jobId);
+        return ApiResponse.success(updatedJob);
     }
 
     @PreAuthorize("@jobSecurityService.isJobOwner(#jobId, authentication)")
@@ -219,11 +212,10 @@ public class JobController {
     public ResponseEntity<ApiResponse<Void>> deleteJob(
             @Parameter(description = "ID of the job to delete", example = "1")
             @PathVariable Long jobId) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Deleting job - jobId={}", requestId, jobId);
+        log.info("Deleting job - jobId={}", jobId);
         jobService.deleteJob(jobId);
-        log.info("Request [{}]: Job deleted successfully - jobId={}", requestId, jobId);
-        return ApiResponse.noContent(requestId);
+        log.info("Job deleted successfully - jobId={}", jobId);
+        return ApiResponse.noContent();
     }
 
     @PreAuthorize("hasRole('RECRUITER')")
@@ -241,12 +233,11 @@ public class JobController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PageableDefault(size = 20) Pageable pageable,
             PagedResourcesAssembler<JobResponseDTO> pagedAssembler) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
-        log.info("Request [{}]: Getting my jobs - userId={}, pageable={}", requestId, userId, pageable);
+        log.info("Getting my jobs - userId={}, pageable={}", userId, pageable);
         PagedModel<EntityModel<JobResponseDTO>> jobs = jobService.getJobsByRecruiter(userId, pageable, pagedAssembler);
-        log.info("Request [{}]: My jobs retrieved successfully - userId={}", requestId, userId);
-        return ApiResponse.success(jobs, requestId);
+        log.info("My jobs retrieved successfully - userId={}", userId);
+        return ApiResponse.success(jobs);
     }
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -269,13 +260,12 @@ public class JobController {
             PagedResourcesAssembler<JobDocument> pagedAssembler,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         User user = userDetails.getUser();
         rateLimitingService.consumeToken(user.getApiKey(), user.getPricingPlan(), "API_KEY");
-        log.info("Request [{}]: Searching jobs - query={}, location={}, company={}", requestId, query, location, company);
+        log.info("Searching jobs - query={}, location={}, company={}", query, location, company);
         PagedModel<EntityModel<JobDocument>> results = jobSearchService.searchJobs(query, location, company, pageable, pagedAssembler);
-        log.info("Request [{}]: Search completed - {} results", requestId, results.getMetadata().getTotalElements());
-        return ApiResponse.success(results, requestId);
+        log.info("Search completed with total of - {} results", results.getMetadata() != null ? results.getMetadata().getTotalElements() : 0);
+        return ApiResponse.success(results);
     }
 
 }

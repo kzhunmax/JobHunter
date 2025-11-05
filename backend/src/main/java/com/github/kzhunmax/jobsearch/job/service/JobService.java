@@ -14,7 +14,6 @@ import com.github.kzhunmax.jobsearch.shared.event.SyncAction;
 import com.github.kzhunmax.jobsearch.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,8 +24,6 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @Service
 @RequiredArgsConstructor
@@ -40,12 +37,11 @@ public class JobService {
 
     @Transactional
     public JobResponseDTO createJob(JobRequestDTO dto, Long userId) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Creating job - userId={}", requestId, userId);
+        log.info("Creating job - userId={}", userId);
         User user = repositoryHelper.findUserById(userId);
         Job job = jobMapper.toEntity(dto, user);
         Job savedJob = jobRepository.save(job);
-        log.info("Request [{}]: Job created successfully - jobId={}", requestId, savedJob.getId());
+        log.info("Job created successfully - jobId={}", savedJob.getId());
         eventProducer.sendJobSyncEvent(new JobSyncEvent(savedJob.getId(), SyncAction.UPSERT));
         return jobMapper.toDto(savedJob);
     }
@@ -53,22 +49,20 @@ public class JobService {
     @Cacheable(value = "jobs", key = "#jobId")
     @Transactional(readOnly = true)
     public JobResponseDTO getJobById(Long jobId) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching job - jobId={}", requestId, jobId);
+        log.info("Fetching job - jobId={}", jobId);
         Job job = repositoryHelper.findJobById(jobId);
-        log.info("Request [{}]: Job fetched successfully - jobId={}", requestId, jobId);
+        log.info("Job fetched successfully - jobId={}", jobId);
         return jobMapper.toDto(job);
     }
 
     @CachePut(value = "jobs", key = "#jobId")
     @Transactional
     public JobResponseDTO updateJob(Long jobId, JobRequestDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Updating job - jobId={}", requestId, jobId);
+        log.info("Updating job - jobId={}", jobId);
         Job job = repositoryHelper.findJobById(jobId);
         jobMapper.updateEntityFromDto(dto, job);
         Job updatedJob = jobRepository.save(job);
-        log.info("Request [{}]: Job updated successfully - jobId={}", requestId, jobId);
+        log.info("Job updated successfully - jobId={}", jobId);
         eventProducer.sendJobSyncEvent(new JobSyncEvent(updatedJob.getId(), SyncAction.UPSERT));
         return jobMapper.toDto(updatedJob);
     }
@@ -76,20 +70,19 @@ public class JobService {
     @CacheEvict(value = "jobs", key = "#jobId")
     @Transactional
     public void deleteJob(Long jobId) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Deleting job - jobId={}", requestId, jobId);
+        log.info("Deleting job - jobId={}", jobId);
 
         Job job = repositoryHelper.findJobById(jobId);
         job.setActive(false);
 
-        log.info("Request [{}]: Deactivating job - jobId={}. Updating open applications to REJECTED.", requestId, jobId);
+        log.info("Deactivating job - jobId={}. Updating open applications to REJECTED.", jobId);
         for (JobApplication application : job.getApplications()) {
             if (application.getStatus() == ApplicationStatus.APPLIED || application.getStatus() == ApplicationStatus.UNDER_REVIEW) {
                 application.setStatus(ApplicationStatus.REJECTED);
             }
         }
         jobRepository.save(job);
-        log.info("Request [{}]: Job deleted successfully - jobId={}", requestId, jobId);
+        log.info("Job deleted successfully - jobId={}", jobId);
         eventProducer.sendJobSyncEvent(new JobSyncEvent(job.getId(), SyncAction.DELETE));
     }
 
@@ -98,12 +91,11 @@ public class JobService {
             Pageable pageable,
             PagedResourcesAssembler<JobResponseDTO> pagedAssembler
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching all active jobs - pageable={}", requestId, pageable);
+        log.info("Fetching all active jobs - pageable={}", pageable);
         Page<JobResponseDTO> jobPage = jobRepository.findByActiveTrue(pageable)
                 .map(jobMapper::toDto);
         long total = jobPage.getTotalElements();
-        log.info("Request [{}]: Found {} active jobs", requestId, total);
+        log.info("Found {} active jobs", total);
         return pagedAssembler.toModel(jobPage, EntityModel::of);
     }
 
@@ -113,13 +105,12 @@ public class JobService {
             Pageable pageable,
             PagedResourcesAssembler<JobResponseDTO> pagedAssembler
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching jobs by recruiter - userId={}, pageable={}", requestId, userId, pageable);
+        log.info("Fetching jobs by recruiter - userId={}, pageable={}", userId, pageable);
         Page<JobResponseDTO> dtoPage = jobRepository.findByPostedById(userId, pageable)
                 .map(jobMapper::toDto);
 
         long total = dtoPage.getTotalElements();
-        log.info("Request [{}]: Found {} jobs for recruiter={}", requestId, total, userId);
+        log.info("Found {} jobs for recruiter={}", total, userId);
         return pagedAssembler.toModel(dtoPage, EntityModel::of);
     }
 }

@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,8 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @Component
 @Slf4j
@@ -36,19 +33,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws IOException, ServletException {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.debug("Request [{}]: Processing JWT authentication filter", requestId);
+        log.debug("Processing JWT authentication filter");
         final String jwt = extractJwtFromRequest(request);
 
         if (jwt != null) {
             processJwtAuthentication(request, jwt);
         }
-        log.debug("Request [{}]: JWT authentication filter completed", requestId);
+        log.debug("JWT authentication filter completed");
         filterChain.doFilter(request, response);
     }
 
     private void processJwtAuthentication(HttpServletRequest request, String jwt) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         try {
             String email = jwtService.extractEmail(jwt);
 
@@ -56,12 +51,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    log.debug("Request [{}]: User authenticated successfully - email={}", requestId, email);
+                    log.debug("User authenticated successfully - email={}", email);
                     authenticateUser(request, userDetails);
                 }
             }
         } catch (Exception e) {
-            log.warn("Request [{}]: JWT processing failed - {}", requestId, e.getMessage());
+            log.warn("JWT processing failed - {}", e.getMessage());
         }
     }
 

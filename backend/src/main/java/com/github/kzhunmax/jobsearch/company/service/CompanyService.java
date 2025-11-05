@@ -9,11 +9,8 @@ import com.github.kzhunmax.jobsearch.exception.CompanyAlreadyExistsException;
 import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @Service
 @RequiredArgsConstructor
@@ -27,28 +24,25 @@ public class CompanyService {
 
     @Transactional
     public CompanyResponseDTO getCompany(Long companyId) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching company - companyId={}", requestId, companyId);
+        log.info("Fetching company - companyId={}", companyId);
         Company company = repositoryHelper.findCompanyById(companyId);
         return companyMapper.toDto(company);
     }
 
     public CompanyResponseDTO createCompany(CompanyRequestDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Creating company - name={}", requestId, dto.name());
+        log.info("Creating company - name={}", dto.name());
         String normalizedName = Company.normalize(dto.name());
         if (companyRepository.existsCompanyByNormalizedName(normalizedName)) {
             throw new CompanyAlreadyExistsException(dto.name());
         }
         Company company = companyMapper.toEntity(dto);
         Company savedCompany = companyRepository.save(company);
-        log.info("Request [{}]: Company created successfully - companyId={}", requestId, savedCompany.getId());
+        log.info("Company created successfully - companyId={}", savedCompany.getId());
         return companyMapper.toDto(savedCompany);
     }
 
     public CompanyResponseDTO updateCompany(Long companyId, CompanyRequestDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Updating company - companyId={}", requestId, companyId);
+        log.info("Updating company - companyId={}", companyId);
         Company company = repositoryHelper.findCompanyById(companyId);
 
         String normalizedName = Company.normalize(dto.name());
@@ -60,7 +54,7 @@ public class CompanyService {
 
         companyMapper.updateEntityFromDto(dto, company);
         Company updatedCompany = companyRepository.save(company);
-        log.info("Request [{}]: Company updated successfully - companyId={}", requestId, companyId);
+        log.info("Company updated successfully - companyId={}", companyId);
         return companyMapper.toDto(updatedCompany);
     }
 

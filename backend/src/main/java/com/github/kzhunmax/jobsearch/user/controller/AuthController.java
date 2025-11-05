@@ -1,6 +1,5 @@
 package com.github.kzhunmax.jobsearch.user.controller;
 
-import com.github.kzhunmax.jobsearch.exception.ApiException;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
 import com.github.kzhunmax.jobsearch.security.PricingPlan;
 import com.github.kzhunmax.jobsearch.security.RateLimitingService;
@@ -17,15 +16,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -73,12 +69,10 @@ public class AuthController {
             )
             @Valid @RequestBody UserRegistrationDTO userRegistrationDTO) {
 
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Processing registration request for email={}", requestId, userRegistrationDTO.email());
-
+        log.info("Processing registration request for email={}", userRegistrationDTO.email());
         UserResponseDTO user = authService.registerUser(userRegistrationDTO);
-        log.info("Request [{}]: Successfully registered for email={}", requestId, user.email());
-        return ApiResponse.created(user, requestId);
+        log.info("Successfully registered for email={}", user.email());
+        return ApiResponse.created(user);
     }
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -119,14 +113,12 @@ public class AuthController {
             HttpServletResponse response,
             HttpServletRequest request
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         String ipAddress = authService.getClientIp(request);
-
         rateLimitingService.consumeToken(ipAddress, PricingPlan.FREE, "IP_ADDRESS");
-        log.info("Request [{}]: Login attempt for email={}", requestId, loginDto.email());
+        log.info("Login attempt for email={}", loginDto.email());
         JwtResponse jwtResponse = authService.authenticate(loginDto.email(), loginDto.password(), response);
-        log.info("Request [{}]: Successful login for email={}", requestId, loginDto.email());
-        return ApiResponse.success(jwtResponse, requestId);
+        log.info("Successful login for email={}", loginDto.email());
+        return ApiResponse.success(jwtResponse);
     }
 
     @PostMapping(value = "/refresh", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -172,20 +164,14 @@ public class AuthController {
             HttpServletResponse response
     ) {
         String refreshToken = request.get("refreshToken");
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-
         if (refreshToken == null) {
-            log.warn("Request [{}]: Missing refresh token", requestId);
-            return ApiResponse.error(HttpStatus.BAD_REQUEST, "MISSING_TOKEN", "Refresh token is required", requestId);
+            log.warn("Missing refresh token");
+            return ApiResponse.error(HttpStatus.BAD_REQUEST, "MISSING_TOKEN", "Refresh token is required");
         }
-        try {
-            JwtResponse jwtResponse = authService.refreshTokens(refreshToken, response);
-            log.info("Request [{}]: Tokens refreshed successfully", requestId);
-            return ApiResponse.success(jwtResponse, requestId);
-        } catch (ApiException ex) {
-            log.warn("Request [{}]: Token refresh failed - {}", requestId, ex.getMessage());
-            return ApiResponse.error(ex.getHttpStatus(), ex.getErrorCode(), ex.getMessage(), requestId);
-        }
+
+        JwtResponse jwtResponse = authService.refreshTokens(refreshToken, response);
+        log.info("Tokens refreshed successfully");
+        return ApiResponse.success(jwtResponse);
     }
 
     @PostMapping(value = "/forgot-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -203,9 +189,8 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequestDTO dto
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         authService.forgotPassword(dto.email());
-        return ApiResponse.success("A password reset link has been sent.", requestId);
+        return ApiResponse.success("A password reset link has been sent.");
     }
 
     @PostMapping(value = "/reset-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -231,9 +216,8 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> resetPassword(
             @Valid @RequestBody ResetPasswordRequestDTO dto
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         authService.resetPassword(dto);
-        return ApiResponse.success("Password has been reset successfully.", requestId);
+        return ApiResponse.success("Password has been reset successfully.");
     }
 
     @GetMapping("/verify-email")
@@ -243,9 +227,8 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token")
     })
     public ResponseEntity<ApiResponse<String>> verifyEmail(@RequestParam("token") String token) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         authService.verifyEmail(token);
-        return ApiResponse.success("Email verified successfully.", requestId);
+        return ApiResponse.success("Email verified successfully.");
     }
 
     @PostMapping(value = "/resend-verification", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -263,8 +246,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> resendVerification(
             @Valid @RequestBody ForgotPasswordRequestDTO dto
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         authService.resendVerification(dto.email());
-        return ApiResponse.success("If an unverified account with this email exists, a new verification link has been sent.", requestId);
+        return ApiResponse.success("If an unverified account with this email exists, a new verification link has been sent.");
     }
 }

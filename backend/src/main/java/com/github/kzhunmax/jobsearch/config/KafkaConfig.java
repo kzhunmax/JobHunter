@@ -75,7 +75,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic jobSyncTopic() {
-        return TopicBuilder.name("job-sync-event")
+        return TopicBuilder.name("job-sync-events")
                 .partitions(3)
                 .replicas(1)
                 .build();

@@ -22,7 +22,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
@@ -37,8 +36,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @Service
 @Slf4j
@@ -57,8 +54,7 @@ public class AuthService {
 
     @Transactional
     public UserResponseDTO registerUser(UserRegistrationDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Registering user - email={}", requestId, dto.email());
+        log.info("Registering user - email={}", dto.email());
         userRegistrationValidator.validateRegistration(dto);
         Set<Role> roles = resolveRoles(dto.roles());
         User user = userMapper.toEntity(dto, roles);
@@ -67,36 +63,34 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         UserEvent event = new UserEvent(dto.email(), EventType.REGISTERED, user.getEmailVerifyToken());
         userEventProducer.sendUserEvent(event);
-        log.info("Request [{}]: User registered successfully - email={}", requestId, dto.email());
+        log.info("User registered successfully - email={}", dto.email());
         return userMapper.toDto(savedUser);
     }
 
     public JwtResponse authenticate(String email, String password, HttpServletResponse response) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Authenticating user - email={}", requestId, email);
+        log.info("Authenticating user - email={}", email);
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
         );
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         if (!userDetails.isEnabled()) {
-            log.warn("Request [{}]: Authentication rejected - account disabled (email unverified): {}", requestId, email);
+            log.warn("Authentication rejected - account disabled (email unverified): {}", email);
             throw new DisabledException("Please verify your email address before logging in. Check your inbox for the verification link, or use the 'Resend Verification' option.");
         }
-        log.info("Request [{}]: User authenticated successfully - email={}", requestId, email);
+        log.info("User authenticated successfully - email={}", email);
         return issueTokens(userDetails, response);
     }
 
     public JwtResponse refreshTokens(String refreshToken, HttpServletResponse response) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Refreshing tokens", requestId);
+        log.info("Refreshing tokens");
         String email = jwtService.extractEmail(refreshToken);
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
         if (!jwtService.isTokenValid(refreshToken, userDetails)) {
             throw new InvalidOrExpiredTokenException();
         }
-        log.info("Request [{}]: Tokens refreshed successfully - email={}", requestId, email);
+        log.info("Tokens refreshed successfully - email={}", email);
         return issueTokens(userDetails, response);
     }
 
@@ -118,20 +112,18 @@ public class AuthService {
 
     @Transactional
     public void forgotPassword(String email) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Password reset requested for email={}", requestId, email);
+        log.info("Password reset requested for email={}", email);
 
         userRepository.findByEmail(email)
                 .filter(user -> user.getProvider() == AuthProvider.LOCAL)
-                .ifPresent(user -> generateAndSendToken(user, EventType.PASSWORD_RESET, requestId));
+                .ifPresent(user -> generateAndSendToken(user, EventType.PASSWORD_RESET));
 
-        log.info("Request [{}]: Password reset request processed for email={}", requestId, email);
+        log.info("Password reset request processed for email={}", email);
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequestDTO dto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Attempting to reset password with token={}", requestId, dto.token());
+        log.info("Attempting to reset password with token={}", dto.token());
 
         if (!dto.isPasswordConfirmed()) {
             throw new IllegalArgumentException("Passwords don't match");
@@ -147,13 +139,12 @@ public class AuthService {
         user.setResetPasswordTokenExpiry(null);
         userRepository.save(user);
 
-        log.info("Request [{}]: Password reset successfully for user={}", requestId, user.getEmail());
+        log.info("Password reset successfully for user={}", user.getEmail());
     }
 
     @Transactional
     public void verifyEmail(String token) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Attempting to verify email with token={}", requestId, token);
+        log.info("Attempting to verify email with token={}", token);
 
         User user = userRepository.findByEmailVerifyToken(token)
                 .orElseThrow(() -> new InvalidOrExpiredTokenException("Invalid or expired verification token", HttpStatus.BAD_REQUEST, "INVALID_TOKEN"));
@@ -162,22 +153,21 @@ public class AuthService {
         user.setEmailVerifyToken(null);
         userRepository.save(user);
 
-        log.info("Request [{}]: Email verified successfully for user={}", requestId, user.getEmail());
+        log.info("Email verified successfully for user={}", user.getEmail());
     }
 
     @Transactional
     public void resendVerification(String email) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Resend verification requested for email={}", requestId, email);
+        log.info("Resend verification requested for email={}", email);
 
         userRepository.findByEmail(email)
                 .filter(user -> user.getProvider() == AuthProvider.LOCAL && !user.isEmailVerified())
-                .ifPresent(user -> generateAndSendToken(user, EventType.REGISTERED, requestId));
+                .ifPresent(user -> generateAndSendToken(user, EventType.REGISTERED));
 
-        log.info("Request [{}]: Resend verification request processed for email={}", requestId, email);
+        log.info("Resend verification request processed for email={}", email);
     }
 
-    private void generateAndSendToken(User user, EventType type, String requestId) {
+    private void generateAndSendToken(User user, EventType type) {
         String token = UUID.randomUUID().toString();
         if (type == EventType.PASSWORD_RESET) {
             user.setResetPasswordToken(token);
@@ -188,7 +178,7 @@ public class AuthService {
             userEventProducer.sendUserEvent(new UserEvent(user.getEmail(), type, token));
         }
         userRepository.save(user);
-        log.info("Request [{}]: {} token generated for email={}", requestId, type, user.getEmail());
+        log.info("{} token generated for email={}", type, user.getEmail());
     }
 
     public String getClientIp(HttpServletRequest request) {

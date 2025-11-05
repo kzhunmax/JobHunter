@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
@@ -25,8 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -79,11 +76,10 @@ public class JobApplicationController {
 
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long userId = userDetails.getId();
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         log.info("User '{}' is applying to job with id={} | resumeId={}", userId, jobId, requestDto.resumeId());
         JobApplicationResponseDTO responseDto = jobApplicationService.applyToJob(jobId, userId, requestDto);
         log.info("User '{}' successfully applied to job id={} | applicationId={}", userId, jobId, responseDto.id());
-        return ApiResponse.success(responseDto, requestId);
+        return ApiResponse.success(responseDto);
     }
 
     @GetMapping(value = "/job/{jobId}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -120,15 +116,14 @@ public class JobApplicationController {
             @PathVariable Long jobId,
             Pageable pageable,
             PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching applications for jobId={} with pageable={}", requestId, jobId, pageable);
+        log.info("Fetching applications for jobId={} with pageable={}", jobId, pageable);
         PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsForJob(jobId, pageable, pagedAssembler);
         int total = applications.getMetadata() != null
                 ? (int) applications.getMetadata().getTotalElements()
                 : applications.getContent().size();
 
-        log.info("Request [{}]: Found {} applications for jobId={}", requestId, total, jobId);
-        return ApiResponse.success(applications, requestId);
+        log.info("Found {} applications for jobId={}", total, jobId);
+        return ApiResponse.success(applications);
     }
 
     @GetMapping(value = "/my-applications", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -149,16 +144,15 @@ public class JobApplicationController {
             Pageable pageable,
             PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
-        log.info("Request [{}]: Fetching applications for candidate='{}' with pageable={}", requestId, userId, pageable);
+        log.info("Fetching applications for candidate='{}' with pageable={}", userId, pageable);
         PagedModel<EntityModel<JobApplicationResponseDTO>> applications = jobApplicationService.getApplicationsByCandidate(userId, pageable, pagedAssembler);
         int total = applications.getMetadata() != null
                 ? (int) applications.getMetadata().getTotalElements()
                 : applications.getContent().size();
 
-        log.info("Request [{}]: Found {} applications for candidate='{}'", requestId, total, userId);
-        return ApiResponse.success(applications, requestId);
+        log.info("Found {} applications for candidate='{}'", total, userId);
+        return ApiResponse.success(applications);
     }
 
     @PatchMapping(value = "/{appId}/status", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -200,11 +194,9 @@ public class JobApplicationController {
                     schema = @Schema(implementation = ApplicationStatus.class)
             )
             @RequestParam ApplicationStatus status) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Update status for application={} to {}", requestId, appId, status);
+        log.info("Update status for application={} to {}", appId, status);
         JobApplicationResponseDTO updatedApplication = jobApplicationService.updateApplicationStatus(appId, status);
-        log.info("Request [{}]: Application status updated successfully | applicationId={} | newStatus={}",
-                requestId, updatedApplication.id(), updatedApplication.status());
-        return ApiResponse.success(updatedApplication, requestId);
+        log.info("Application status updated successfully | applicationId={} | newStatus={}", updatedApplication.id(), updatedApplication.status());
+        return ApiResponse.success(updatedApplication);
     }
 }

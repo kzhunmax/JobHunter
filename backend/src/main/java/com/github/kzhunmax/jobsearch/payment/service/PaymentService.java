@@ -45,31 +45,31 @@ public class PaymentService {
         Stripe.apiKey = stripeSecretKey;
     }
 
-    public ResponseEntity<String> handleWebhook(String payload, String sigHeader, String requestId) {
+    public ResponseEntity<String> handleWebhook(String payload, String sigHeader) {
         try {
             Event event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
             StripeObject stripeObject = event.getDataObjectDeserializer().getObject()
                     .orElseThrow(() -> new RuntimeException("Failed to deserialize Stripe event data"));
 
             if (event.getType().equals("checkout.session.completed")) {
-                handleCheckoutSessionCompleted((Session) stripeObject, requestId);
+                handleCheckoutSessionCompleted((Session) stripeObject);
             } else {
-                log.warn("Request [{}]: Unhandled Stripe event type: {}", requestId, event.getType());
+                log.warn("Unhandled Stripe event type: {}", event.getType());
             }
             return ResponseEntity.ok("Event Received");
         } catch (SignatureVerificationException e) {
-            log.warn("Request [{}]: Stripe webhook signature verification failed.", requestId, e);
+            log.warn("Stripe webhook signature verification failed.", e);
             return ResponseEntity.badRequest().body("Webhook Error: Signature verification failed");
         } catch (Exception e) {
-            log.error("Request [{}]: Unexpected error processing Stripe webhook.", requestId, e);
+            log.error("Unexpected error processing Stripe webhook.", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Webhook Error: " + e.getMessage());
         }
     }
 
-    private void handleCheckoutSessionCompleted(Session session, String requestId) {
+    private void handleCheckoutSessionCompleted(Session session) {
         String clientReferenceId = session.getClientReferenceId();
         if (StringUtils.isBlank(clientReferenceId)) {
-            log.error("Request [{}]: Webhook Error: checkout.session.completed event without client_reference_id", requestId);
+            log.error("Webhook Error: checkout.session.completed event without client_reference_id");
             return;
         }
 
@@ -77,7 +77,7 @@ public class PaymentService {
         try {
             userId = Long.parseLong(clientReferenceId);
         } catch (NumberFormatException e) {
-            log.error("Request [{}]: Invalid userId in client_reference_id: {}", requestId, clientReferenceId, e);
+            log.error("Invalid userId in client_reference_id: {}", clientReferenceId, e);
             return;
         }
 
@@ -85,13 +85,13 @@ public class PaymentService {
                 user -> {
                     user.setPricingPlan(PricingPlan.PREMIUM);
                     userRepository.save(user);
-                    log.info("Request [{}]: User {} successfully upgraded to PREMIUM", requestId, user.getEmail());
+                    log.info("User {} successfully upgraded to PREMIUM", user.getEmail());
                 },
-                () -> log.error("Request [{}]: User not found for ID {} from Stripe session {}", requestId, userId, session.getId())
+                () -> log.error("User not found for ID {} from Stripe session {}", userId, session.getId())
         );
     }
 
-    public CheckoutSessionResponse createCheckoutSession(User user, String requestId) throws StripeException {
+    public CheckoutSessionResponse createCheckoutSession(User user) throws StripeException {
         String successUrl = backendUrl + "/api/payments/success?session_id={CHECKOUT_SESSION_ID}";
         String cancelUrl = backendUrl + "/api/payments/cancel";
 
@@ -109,7 +109,7 @@ public class PaymentService {
 
         Session session = Session.create(params);
 
-        log.info("Request [{}]: Created Stripe Checkout session {} for user {}", requestId, session.getId(), user.getEmail());
+        log.info("Created Stripe Checkout session {} for user {}", session.getId(), user.getEmail());
 
         return new CheckoutSessionResponse(session.getUrl());
     }

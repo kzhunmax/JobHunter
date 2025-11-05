@@ -10,7 +10,6 @@ import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -22,8 +21,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.Set;
 
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -34,9 +31,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         String registrationId = request.getClientRegistration().getRegistrationId();
-        log.info("Request [{}]: Loading OAuth2 user - registrationId={}", requestId, registrationId);
+        log.info("Loading OAuth2 user - registrationId={}", registrationId);
 
         OAuth2User oAuth2User = super.loadUser(request);
 
@@ -55,8 +51,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationProcessingException("Email not found from OAuth2 provider");
         }
         String email = userInfo.getEmail();
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.debug("Request [{}]: OAuth2 user loaded - email={}", requestId, email);
+        log.debug("OAuth2 user loaded - email={}", email);
 
         User user = userRepository.findByEmail(email).orElse(null);
         if (user != null) {
@@ -64,14 +59,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 throw new OAuth2AuthenticationProcessingException("Looks like you're signed up with " +
                         user.getProvider() + " account. Please use it to login.");
             }
-            log.info("Request [{}]: Found existing user for OAuth2 - email={}", requestId, email);
+            log.info("Found existing user for OAuth2 - email={}", email);
             if (!user.isEmailVerified()) {
-                log.info("Request [{}]: Marking existing OAuth user as verified - email={}", requestId, email);
+                log.info("Marking existing OAuth user as verified - email={}", email);
                 user.setEmailVerified(true);
                 userRepository.save(user);
             }
         } else {
-            log.info("Request [{}]: Creating new user for OAuth2 - email={}", requestId, email);
+            log.info("Creating new user for OAuth2 - email={}", email);
             user = registerNewUser(request, userInfo);
         }
 

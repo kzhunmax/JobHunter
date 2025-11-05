@@ -14,8 +14,12 @@ public interface CompanyMapper {
 
     CompanyResponseDTO toDto(Company company);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "recruiters", ignore = true)
     @Mapping(target = "jobs", ignore = true)
+    @Mapping(target = "normalizedName", ignore = true)
     Company toEntity(CompanyRequestDTO dto);
 
     @Mapping(target = "id", ignore = true)
@@ -23,5 +27,6 @@ public interface CompanyMapper {
     @Mapping(target = "jobs", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "normalizedName", ignore = true)
     void updateEntityFromDto(CompanyRequestDTO dto, @MappingTarget Company company);
 }

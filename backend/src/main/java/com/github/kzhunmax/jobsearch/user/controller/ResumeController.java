@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,8 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @RestController
 @RequestMapping("/api/user/resume")
@@ -44,12 +41,11 @@ public class ResumeController {
     public ResponseEntity<ApiResponse<List<ResumeSummaryDTO>>> getAllResumes(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
-        log.info("Request [{}]: Getting all resumes for user ID={}", requestId, userId);
+        log.info("Getting all resumes for user ID={}", userId);
         List<ResumeSummaryDTO> resumes = resumeService.getAllResumes(userId);
-        log.info("Request [{}]: Found {} resumes for user ID={}", requestId, resumes.size(), userId);
-        return ApiResponse.success(resumes, requestId);
+        log.info("Found {} resumes for user ID={}", resumes.size(), userId);
+        return ApiResponse.success(resumes);
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,12 +67,11 @@ public class ResumeController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
-        log.info("Request [{}]: Adding resume for user ID={}", requestId, userId);
+        log.info("Adding resume for user ID={}", userId);
         ResumeSummaryDTO newResume = resumeService.addResume(userId, file);
-        log.info("Request [{}]: Resume added successfully for user ID={} with ID={}", requestId, userId, newResume.id());
-        return ApiResponse.created(newResume, requestId);
+        log.info("Resume added successfully for user ID={} with ID={}", userId, newResume.id());
+        return ApiResponse.created(newResume);
     }
 
     @PutMapping(value = "/{resumeId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -110,12 +105,11 @@ public class ResumeController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
-        log.info("Request [{}]: Updating resume ID={} for user ID={}", requestId, resumeId, userId);
+        log.info("Updating resume ID={} for user ID={}", resumeId, userId);
         ResumeSummaryDTO updatedResume = resumeService.updateResume(resumeId, userId, file);
-        log.info("Request [{}]: Resume ID={} updated successfully for user ID={}", requestId, resumeId, userId);
-        return ApiResponse.success(updatedResume, requestId);
+        log.info("Resume ID={} updated successfully for user ID={}", resumeId, userId);
+        return ApiResponse.success(updatedResume);
     }
 
     @DeleteMapping(value = "/{resumeId}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -147,11 +141,10 @@ public class ResumeController {
             @PathVariable Long resumeId,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
         Long userId = userDetails.getId();
-        log.info("Request [{}]: Deleting resume ID={} for user ID={}", requestId, resumeId, userId);
+        log.info("Deleting resume ID={} for user ID={}", resumeId, userId);
         resumeService.deleteResume(resumeId, userId);
-        log.info("Request [{}]: Resume ID={} deleted successfully for user ID={}", requestId, resumeId, userId);
-        return ApiResponse.noContent(requestId);
+        log.info("Resume ID={} deleted successfully for user ID={}", resumeId, userId);
+        return ApiResponse.noContent();
     }
 }

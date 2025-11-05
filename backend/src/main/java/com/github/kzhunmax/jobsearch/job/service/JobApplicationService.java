@@ -15,7 +15,6 @@ import com.github.kzhunmax.jobsearch.user.model.User;
 import com.github.kzhunmax.jobsearch.user.model.UserProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -28,8 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
-
-import static com.github.kzhunmax.jobsearch.constants.LoggingConstants.REQUEST_ID_MDC_KEY;
 
 @Service
 @Slf4j
@@ -47,20 +44,19 @@ public class JobApplicationService {
     })
     @Transactional
     public JobApplicationResponseDTO applyToJob(Long jobId, Long userId, JobApplicationRequestDTO requestDto) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Applying to job - jobId={}, userId={}", requestId, jobId, userId);
+        log.info("Applying to job - jobId={}, userId={}", jobId, userId);
         Job job = repositoryHelper.findJobById(jobId);
         User candidate = repositoryHelper.findUserById(userId);
         UserProfile candidateProfile = repositoryHelper.findUserProfileByUserId(userId);
-        jobApplicationValidator.validateCandidateProfileIsComplete(candidateProfile, requestId);
+        jobApplicationValidator.validateCandidateProfileIsComplete(candidateProfile);
         jobApplicationValidator.validateNoDuplicateApplication(job, candidate);
         Resume resume = repositoryHelper.findResumeById(requestDto.resumeId());
         if (!Objects.equals(resume.getUserProfile().getUser().getId(), userId)) {
-            log.warn("Request [{}]: User ID={} attempted to apply with resume ID={} which they do not own.", requestId, userId, resume.getId());
+            log.warn("User ID={} attempted to apply with resume ID={} which they do not own.", userId, resume.getId());
             throw new ResumeOwnershipException();
         }
         JobApplication application = createAndSaveApplication(job, candidate, requestDto.coverLetter(), resume);
-        log.info("Request [{}]: Application saved successfully - applicationId={}, jobId={}", requestId, application.getId(), jobId);
+        log.info("Application saved successfully - applicationId={}, jobId={}", application.getId(), jobId);
         return jobApplicationMapper.toDto(application);
     }
 
@@ -71,8 +67,7 @@ public class JobApplicationService {
             Pageable pageable,
             PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching applications for jobId={} | pageable={}", requestId, jobId, pageable);
+        log.info("Fetching applications for jobId={} | pageable={}", jobId, pageable);
         Job job = repositoryHelper.findJobById(jobId);
 
         Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository
@@ -80,7 +75,7 @@ public class JobApplicationService {
                 .map(jobApplicationMapper::toDto);
 
         long total = applicationPage.getTotalElements();
-        log.info("Request [{}]: Found {} applications for job - jobId={}", requestId, total, jobId);
+        log.info("Found {} applications for job - jobId={}", total, jobId);
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
@@ -90,12 +85,11 @@ public class JobApplicationService {
     })
     @Transactional
     public JobApplicationResponseDTO updateApplicationStatus(Long applicationId, ApplicationStatus status) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Updating application status - applicationId={}", requestId, applicationId);
+        log.info("Updating application status - applicationId={}", applicationId);
         JobApplication application = repositoryHelper.findApplicationById(applicationId);
         application.setStatus(status);
         JobApplication savedApplication = jobApplicationRepository.save(application);
-        log.info("Request [{}]: Application status updated successfully - applicationId={}", requestId, applicationId);
+        log.info("Application status updated successfully - applicationId={}", applicationId);
         return jobApplicationMapper.toDto(savedApplication);
     }
 
@@ -106,12 +100,11 @@ public class JobApplicationService {
             Pageable pageable,
             PagedResourcesAssembler<JobApplicationResponseDTO> pagedAssembler
     ) {
-        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
-        log.info("Request [{}]: Fetching application by candidate - userId={}, pageable={}", requestId, userId, pageable);
+        log.info("Fetching application by candidate - userId={}, pageable={}", userId, pageable);
         User candidate = repositoryHelper.findUserById(userId);
         Page<JobApplicationResponseDTO> applicationPage = jobApplicationRepository.findByCandidate(candidate, pageable).map(jobApplicationMapper::toDto);
         long total = applicationPage.getTotalPages();
-        log.info("Request [{}]: Found {} applications for candidate - userId={}", requestId, total, userId);
+        log.info("Found {} applications for candidate - userId={}", total, userId);
         return pagedAssembler.toModel(applicationPage, EntityModel::of);
     }
 
