@@ -42,9 +42,9 @@ public class LoggingFilterTest {
         try (MockedStatic<MDC> mdcMock = mockStatic(MDC.class))  {
             loggingFilter.doFilterInternal(request, response, filterChain);
 
-            mdcMock.verify(() -> MDC.put(eq(REQUEST_ID_MDC_KEY), eq(requestId)));
+            mdcMock.verify(() -> MDC.put(REQUEST_ID_MDC_KEY, requestId));
             verify(filterChain).doFilter(any(), any());
-            mdcMock.verify(() -> MDC.remove(eq(REQUEST_ID_MDC_KEY)));
+            mdcMock.verify(() -> MDC.remove(REQUEST_ID_MDC_KEY));
         }
     }
 
@@ -59,9 +59,9 @@ public class LoggingFilterTest {
 
             loggingFilter.doFilterInternal(request, response, filterChain);
 
-            mdcMock.verify(() -> MDC.put(eq(REQUEST_ID_MDC_KEY), eq(generatedUuid.toString())));
+            mdcMock.verify(() -> MDC.put(REQUEST_ID_MDC_KEY, generatedUuid.toString()));
             verify(filterChain).doFilter(any(), any());
-            mdcMock.verify(() -> MDC.remove(eq(REQUEST_ID_MDC_KEY)));
+            mdcMock.verify(() -> MDC.remove(REQUEST_ID_MDC_KEY));
         }
     }
 
@@ -76,9 +76,9 @@ public class LoggingFilterTest {
 
             loggingFilter.doFilterInternal(request, response, filterChain);
 
-            mdcMock.verify(() -> MDC.put(eq(REQUEST_ID_MDC_KEY), eq(generatedUuid.toString())));
+            mdcMock.verify(() -> MDC.put(REQUEST_ID_MDC_KEY, generatedUuid.toString()));
             verify(filterChain).doFilter(any(), any());
-            mdcMock.verify(() -> MDC.remove(eq(REQUEST_ID_MDC_KEY)));
+            mdcMock.verify(() -> MDC.remove(REQUEST_ID_MDC_KEY));
         }
     }
 }

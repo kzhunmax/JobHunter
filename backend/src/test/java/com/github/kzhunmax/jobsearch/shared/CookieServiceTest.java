@@ -1,4 +1,4 @@
-package com.github.kzhunmax.jobsearch.service;
+package com.github.kzhunmax.jobsearch.shared;
 
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import jakarta.servlet.http.HttpServletResponse;

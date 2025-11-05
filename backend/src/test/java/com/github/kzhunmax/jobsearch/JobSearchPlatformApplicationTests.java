@@ -16,5 +16,6 @@ class JobSearchPlatformApplicationTests extends AbstractIntegrationTest {
         assertThat(POSTGRES.isRunning()).isTrue();
         assertThat(REDIS.isRunning()).isTrue();
         assertThat(ELASTICSEARCH.isRunning()).isTrue();
+        assertThat(KAFKA.isRunning()).isTrue();
     }
 }
