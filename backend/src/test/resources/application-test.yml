@@ -2,14 +2,18 @@ spring:
   jpa:
     show-sql: true
     open-in-view: false
-
   datasource:
     driver-class-name: org.postgresql.Driver
-
-  elasticsearch:
-    uris=:
 
 jwt:
   secret-key: test-key
   expiration: 900000
   refresh-expiration: 604800000
+supabase:
+  s3:
+    access-key-id: test-key
+    secret-access-key: test-secret
+stripe:
+  secret-key: test-key
+  webhook-secret: test-webhook-secret
+  premium-price-id: test-price-id
