@@ -4,6 +4,7 @@ import com.github.kzhunmax.jobsearch.security.JwtAuthFilter;
 import com.github.kzhunmax.jobsearch.security.filter.LoggingFilter;
 import com.github.kzhunmax.jobsearch.security.oauth2.CustomOAuth2UserService;
 import com.github.kzhunmax.jobsearch.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -77,5 +79,15 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception{
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public DefaultOAuth2UserService defaultOAuth2UserService() {
+        return new DefaultOAuth2UserService();
+    }
+
+    @Bean
+    public CustomOAuth2UserService customOAuth2UserService(DefaultOAuth2UserService defaultOAuth2UserService, UserRepository userRepository) {
+        return new CustomOAuth2UserService(userRepository, defaultOAuth2UserService);
     }
 }

@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
@@ -24,9 +25,10 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private final UserRepository userRepository;
+    private final DefaultOAuth2UserService delegate;
 
     @Override
     @Transactional
@@ -34,7 +36,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = request.getClientRegistration().getRegistrationId();
         log.info("Loading OAuth2 user - registrationId={}", registrationId);
 
-        OAuth2User oAuth2User = super.loadUser(request);
+        OAuth2User oAuth2User = delegate.loadUser(request);
 
         try {
             return processOAuth2User(request, oAuth2User);
