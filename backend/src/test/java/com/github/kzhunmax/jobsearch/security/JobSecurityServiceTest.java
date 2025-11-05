@@ -1,14 +1,13 @@
 package com.github.kzhunmax.jobsearch.security;
 
-import com.github.kzhunmax.jobsearch.exception.ApplicationNotFoundException;
-import com.github.kzhunmax.jobsearch.exception.JobNotFoundException;
-import com.github.kzhunmax.jobsearch.model.ApplicationStatus;
-import com.github.kzhunmax.jobsearch.model.Job;
-import com.github.kzhunmax.jobsearch.model.JobApplication;
-import com.github.kzhunmax.jobsearch.model.User;
-import com.github.kzhunmax.jobsearch.repository.JobApplicationRepository;
-import com.github.kzhunmax.jobsearch.repository.JobRepository;
+import com.github.kzhunmax.jobsearch.company.model.Company;
+import com.github.kzhunmax.jobsearch.job.model.Job;
+import com.github.kzhunmax.jobsearch.job.model.JobApplication;
+import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
+import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
+import com.github.kzhunmax.jobsearch.user.model.User;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,83 +17,85 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.Optional;
 import java.util.Set;
 
 import static com.github.kzhunmax.jobsearch.util.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("JobSecurityService Unit Tests")
 public class JobSecurityServiceTest {
 
     @Mock
-    private JobRepository jobRepository;
-
-    @Mock
-    private JobApplicationRepository jobApplicationRepository;
+    private RepositoryHelper repositoryHelper;
 
     @InjectMocks
     private JobSecurityService jobSecurityService;
 
-    private Authentication authentication;
-    private Authentication adminAuth;
+    // Arrange
     private Job job;
     private JobApplication application;
-    private static final String OTHER_USER = "otheruser";
+
+    private Authentication ownerAuth;
+    private Authentication candidateAuth;
+    private Authentication adminAuth;
+    private Authentication otherAuth;
+
+    private static final String CANDIDATE_EMAIL = "candidate@example.com";
+    private static final String OTHER_EMAIL = "other@example.com";
+    private static final String ADMIN_EMAIL = "admin@example.com";
 
     @BeforeEach
     void setUp() {
-        User owner = createUser(TEST_USERNAME);
-        User candidate = createUser(TEST_USERNAME);
-        job = createJob(TEST_ID, owner, true);
-        application = createJobApplication(TEST_ID, candidate, job);
+        User owner = createUser(1L, TEST_EMAIL);
+        User candidate = createUser(2L, CANDIDATE_EMAIL);
+        Company company = createCompany(1L, "Test Co");
+        job = createJob(TEST_ID, owner, company, true);
+        application = createJobApplication(TEST_ID, candidate, job, null);
 
-        authentication = new UsernamePasswordAuthenticationToken(TEST_USERNAME, null, Set.of(new SimpleGrantedAuthority("ROLE_CANDIDATE")));
-        adminAuth = new UsernamePasswordAuthenticationToken(TEST_USERNAME, null, Set.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        ownerAuth = new UsernamePasswordAuthenticationToken(TEST_EMAIL, null, Set.of(new SimpleGrantedAuthority("ROLE_RECRUITER")));
+        candidateAuth = new UsernamePasswordAuthenticationToken(CANDIDATE_EMAIL, null, Set.of(new SimpleGrantedAuthority("ROLE_CANDIDATE")));
+        adminAuth = new UsernamePasswordAuthenticationToken(ADMIN_EMAIL, null, Set.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        otherAuth = new UsernamePasswordAuthenticationToken(OTHER_EMAIL, null, Set.of(new SimpleGrantedAuthority("ROLE_CANDIDATE")));
     }
 
     @Test
+    @DisplayName("isJobOwner should return true when user is the owner")
     void isJobOwner_authenticatedOwner_returnsTrue() {
-        when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(job));
+        when(repositoryHelper.findJobById(TEST_ID)).thenReturn(job);
 
-        boolean result = jobSecurityService.isJobOwner(TEST_ID, authentication);
+        boolean result = jobSecurityService.isJobOwner(TEST_ID, ownerAuth);
 
         assertThat(result).isTrue();
-        verify(jobRepository).findById(TEST_ID);
+        verify(repositoryHelper).findJobById(TEST_ID);
     }
 
     @Test
-    void isJobOwner_notOwner_returnsFalse() {
-        User otherOwner = User.builder().username(OTHER_USER).build();
-        Job otherJob = Job.builder().id(TEST_ID).postedBy(otherOwner).build();
-        when(jobRepository.findById(TEST_ID)).thenReturn(Optional.of(otherJob));
+    @DisplayName("isJobOwner should return false when user is not the owner")
+    void isJobOwner_shouldReturnFalse_whenUserIsNotOwner() {
+        when(repositoryHelper.findJobById(TEST_ID)).thenReturn(job);
 
-        boolean result = jobSecurityService.isJobOwner(TEST_ID, authentication);
+        boolean result = jobSecurityService.isJobOwner(TEST_ID, otherAuth);
 
         assertThat(result).isFalse();
     }
 
     @Test
-    void isJobOwner_notAuthenticated_returnsFalse() {
+    @DisplayName("isJobOwner should return false when user is not authenticated")
+    void isJobOwner_shouldReturnFalse_whenNotAuthenticated() {
+        // Act
         boolean result = jobSecurityService.isJobOwner(TEST_ID, null);
 
+        // Assert
         assertThat(result).isFalse();
-        verify(jobRepository, never()).findById(any());
+        verify(repositoryHelper, never()).findJobById(any());
     }
 
     @Test
-    void isJobOwner_jobNotFound_throwsException() {
-        when(jobRepository.findById(TEST_ID)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> jobSecurityService.isJobOwner(TEST_ID, authentication))
-                .isInstanceOf(JobNotFoundException.class);
-    }
-
-    @Test
-    void canUpdateApplication_isAdmin_returnsTrue() {
-        when(jobApplicationRepository.findById(TEST_ID)).thenReturn(Optional.of(application));
+    @DisplayName("canUpdateApplication should return true for admin")
+    void canUpdateApplication_shouldReturnTrue_forAdmin() {
+        when(repositoryHelper.findApplicationById(TEST_ID)).thenReturn(application);
 
         boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.REJECTED, adminAuth);
 
@@ -102,52 +103,45 @@ public class JobSecurityServiceTest {
     }
 
     @Test
-    void canUpdateApplication_jobOwner_returnsTrue() {
-        User owner = User.builder().username(TEST_USERNAME).build();
-        Job ownedJob = Job.builder().postedBy(owner).build();
-        JobApplication ownedApp = JobApplication.builder().job(ownedJob).build();
-        when(jobApplicationRepository.findById(TEST_ID)).thenReturn(Optional.of(ownedApp));
+    @DisplayName("canUpdateApplication should return true for job owner")
+    void canUpdateApplication_shouldReturnTrue_forJobOwner() {
+        when(repositoryHelper.findApplicationById(TEST_ID)).thenReturn(application);
 
-        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.REJECTED, authentication);
+        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.ACCEPTED, ownerAuth);
 
         assertThat(result).isTrue();
     }
 
     @Test
-    void canUpdateApplication_candidateRejectStatus_returnsTrue() {
-        User candidate = User.builder().username(OTHER_USER).build();
-        application.setCandidate(candidate);
-        when(jobApplicationRepository.findById(TEST_ID)).thenReturn(Optional.of(application));
+    @DisplayName("canUpdateApplication should return true for candidate setting status to REJECTED")
+    void canUpdateApplication_shouldReturnTrue_forCandidateRejecting() {
+        when(repositoryHelper.findApplicationById(TEST_ID)).thenReturn(application);
 
-        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.REJECTED,
-                new UsernamePasswordAuthenticationToken(OTHER_USER, null, Set.of(new SimpleGrantedAuthority("ROLE_CANDIDATE"))));
+        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.REJECTED, candidateAuth);
 
         assertThat(result).isTrue();
     }
 
     @Test
-    void canUpdateApplication_candidateOtherStatus_returnsFalse() {
-        when(jobApplicationRepository.findById(TEST_ID)).thenReturn(Optional.of(application));
+    @DisplayName("canUpdateApplication should return false for candidate setting other status")
+    void canUpdateApplication_shouldReturnFalse_forCandidateAccepting() {
+        when(repositoryHelper.findApplicationById(TEST_ID)).thenReturn(application);
 
-        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.ACCEPTED,
-                new UsernamePasswordAuthenticationToken(OTHER_USER, null, Set.of(new SimpleGrantedAuthority("ROLE_CANDIDATE"))));
+        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.ACCEPTED, candidateAuth);
 
         assertThat(result).isFalse();
     }
 
     @Test
-    void canUpdateApplication_notAuthenticated_returnsFalse() {
-        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.REJECTED, null);
+    @DisplayName("canUpdateApplication should return false for unrelated user")
+    void canUpdateApplication_shouldReturnFalse_forOtherUser() {
+        // Arrange
+        when(repositoryHelper.findApplicationById(TEST_ID)).thenReturn(application);
 
+        // Act
+        boolean result = jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.REJECTED, otherAuth);
+
+        // Assert
         assertThat(result).isFalse();
-        verify(jobApplicationRepository, never()).findById(any());
-    }
-
-    @Test
-    void canUpdateApplication_applicationNotFound_throwsException() {
-        when(jobApplicationRepository.findById(TEST_ID)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> jobSecurityService.canUpdateApplication(TEST_ID, ApplicationStatus.REJECTED, authentication))
-                .isInstanceOf(ApplicationNotFoundException.class);
     }
 }

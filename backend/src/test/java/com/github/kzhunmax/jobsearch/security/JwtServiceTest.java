@@ -2,6 +2,7 @@ package com.github.kzhunmax.jobsearch.security;
 
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,51 +33,72 @@ public class JwtServiceTest {
 
     @BeforeEach
     void setUp() {
-        userDetails = createUserDetails(TEST_USERNAME);
+        // Arrange
+        userDetails = createUserDetails(TEST_EMAIL);
         ReflectionTestUtils.setField(jwtService, "secretKey", SECRET_KEY);
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", JWT_EXPIRATION);
         ReflectionTestUtils.setField(jwtService, "refreshExpiration", REFRESH_EXPIRATION);
     }
 
     @Test
+    @DisplayName("should generate a valid token from user details")
     void generateToken_withUserDetails_createValidToken() {
+        // Act
         String token = jwtService.generateToken(userDetails);
+
+        // Assert
         assertThat(token).isNotNull().isNotEmpty();
     }
 
     @Test
+    @DisplayName("should extract email from a valid token")
     void extractUsername_fromValidToken_returnsUsername() {
+        // Arrange
         String token = jwtService.generateToken(userDetails);
-        String extracted = jwtService.extractUsername(token);
-        assertThat(extracted).isEqualTo(TEST_USERNAME);
+
+        // Act
+        String extracted = jwtService.extractEmail(token);
+
+        // Assert
+        assertThat(extracted).isEqualTo(TEST_EMAIL);
     }
 
     @Test
+    @DisplayName("should extract subject claim")
     void extractClaim_withResolver_returnsClaimValue() {
+        // Arrange
         String token = jwtService.generateToken(userDetails);
+
+        // Act
         String result = jwtService.extractClaim(token, Claims::getSubject);
-        assertThat(result).isEqualTo(TEST_USERNAME);
+
+        // Assert
+        assertThat(result).isEqualTo(TEST_EMAIL);
     }
 
     @Test
+    @DisplayName("should build token with extra claims")
     void buildToken_withExtraClaims_buildsToken() {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("role", "admin");
 
         String token = jwtService.buildToken(extraClaims, userDetails);
-
         String role = jwtService.extractClaim(token, claims -> (String) claims.get("role"));
         assertThat(role).isEqualTo("admin");
     }
 
     @Test
+    @DisplayName("should generate a refresh token")
     void generateRefreshToken_createsRefreshToken() {
+        // Act
         String token = jwtService.generateRefreshToken(userDetails);
 
+        // Assert
         assertThat(token).isNotNull().isNotEmpty();
     }
 
     @Test
+    @DisplayName("should return true for a valid token")
     void isTokenValid_validTokenAndUser_ReturnsTrue() {
         String token = jwtService.generateToken(userDetails);
         boolean valid = jwtService.isTokenValid(token, userDetails);
@@ -84,19 +106,23 @@ public class JwtServiceTest {
     }
 
     @Test
-    void isTokenValid_expiredToken_returnsFalse() {
+    @DisplayName("should return false for an expired token")
+    void isTokenValid_shouldReturnFalse_forExpiredToken() {
+        // Arrange
         String expiredToken = "any-fake-token-string";
         doReturn(new Date(System.currentTimeMillis() - 10000)).when(jwtService).extractClaim(eq(expiredToken), any());
-        doReturn(TEST_USERNAME).when(jwtService).extractUsername(expiredToken);
-
+        doReturn(TEST_EMAIL).when(jwtService).extractEmail(expiredToken);
+        // Act
         boolean valid = jwtService.isTokenValid(expiredToken, userDetails);
+        // Assert
         assertThat(valid).isFalse();
     }
 
     @Test
+    @DisplayName("should return false for token with wrong user")
     void isTokenValid_wrongUsername_returnsFalse() {
         String token = jwtService.generateToken(userDetails);
-        UserDetails wrongUser = createUserDetails("wrongUser");
+        UserDetails wrongUser = createUserDetails(NON_EXISTENT_EMAIL);
         boolean valid = jwtService.isTokenValid(token, wrongUser);
         assertThat(valid).isFalse();
     }
