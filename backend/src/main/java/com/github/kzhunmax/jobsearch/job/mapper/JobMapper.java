@@ -14,8 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 public abstract class JobMapper {
 
     @Autowired
-    private RepositoryHelper repositoryHelper;
+    protected RepositoryHelper repositoryHelper;
 
+    @BeanMapping(nullValueMappingStrategy = NullValueMappingStrategy.RETURN_NULL)
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "applications", ignore = true)
     @Mapping(target = "postedBy", source = "user")

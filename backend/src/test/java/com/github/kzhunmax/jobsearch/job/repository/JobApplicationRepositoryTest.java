@@ -1,8 +1,15 @@
-package com.github.kzhunmax.jobsearch.repository;
+package com.github.kzhunmax.jobsearch.job.repository;
 
-import com.github.kzhunmax.jobsearch.model.Job;
-import com.github.kzhunmax.jobsearch.model.JobApplication;
-import com.github.kzhunmax.jobsearch.model.User;
+import com.github.kzhunmax.jobsearch.company.model.Company;
+import com.github.kzhunmax.jobsearch.company.repository.CompanyRepository;
+import com.github.kzhunmax.jobsearch.job.model.Job;
+import com.github.kzhunmax.jobsearch.job.model.JobApplication;
+import com.github.kzhunmax.jobsearch.user.model.Resume;
+import com.github.kzhunmax.jobsearch.user.model.User;
+import com.github.kzhunmax.jobsearch.user.model.UserProfile;
+import com.github.kzhunmax.jobsearch.user.repository.ResumeRepository;
+import com.github.kzhunmax.jobsearch.user.repository.UserProfileRepository;
+import com.github.kzhunmax.jobsearch.user.repository.UserRepository;
 import com.github.kzhunmax.jobsearch.util.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,22 +38,44 @@ public class JobApplicationRepositoryTest extends AbstractIntegrationTest {
     @Autowired
     private JobApplicationRepository jobApplicationRepository;
 
+    @Autowired
+    private CompanyRepository companyRepository;
+
+    @Autowired
+    private UserProfileRepository userProfileRepository;
+
+    @Autowired
+    private ResumeRepository resumeRepository;
+
     private User testUser;
     private Job testJob;
+    private Company testCompany;
+    private Resume testResume;
 
     @BeforeEach
     void setUp() {
-        testUser = createUser(TEST_USERNAME);
+        testUser = createUser(TEST_EMAIL);
         userRepository.save(testUser);
 
-        testJob = createJob(testUser, true);
+        testCompany = createCompany(TEST_COMPANY_NAME);
+        companyRepository.save(testCompany);
+
+        testJob = createJob(testUser, testCompany, true);
         jobRepository.save(testJob);
+
+        UserProfile testProfile = createUserProfile(testUser);
+        userProfileRepository.save(testProfile);
+        testUser.setProfile(testProfile);
+        userRepository.save(testUser);
+
+        testResume = createResume(testProfile);
+        resumeRepository.save(testResume);
     }
 
     @Test
     @DisplayName("Should return applications for a job when applications exist")
     void findByJob_whenApplicationsExist_shouldReturnApplicationsForJob() {
-        JobApplication application = createJobApplication(testUser, testJob);
+        JobApplication application = createJobApplication(testUser, testJob, testResume);
         jobApplicationRepository.save(application);
 
         Page<JobApplication> result = jobApplicationRepository.findByJob(testJob, Pageable.unpaged());
@@ -72,7 +101,16 @@ public class JobApplicationRepositoryTest extends AbstractIntegrationTest {
         for (int i = 0; i < 5; i++) {
             User candidate = createUser("candidate" + i);
             userRepository.save(candidate);
-            JobApplication application = createJobApplication(candidate, testJob);
+
+            UserProfile profile = createUserProfile(candidate);
+            userProfileRepository.save(profile);
+            candidate.setProfile(profile);
+            userRepository.save(candidate);
+
+            Resume resume = createResume(profile);
+            resumeRepository.save(resume);
+
+            JobApplication application = createJobApplication(candidate, testJob, resume);
             jobApplicationRepository.save(application);
         }
 
@@ -89,14 +127,14 @@ public class JobApplicationRepositoryTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Should return applications for a candidate when applications exist")
     void findByCandidate_whenApplicationsExist_shouldReturnApplicationsForCandidate() {
-        JobApplication application = createJobApplication(testUser, testJob);
+        JobApplication application = createJobApplication(testUser, testJob, testResume);
         jobApplicationRepository.save(application);
 
         Page<JobApplication> result = jobApplicationRepository.findByCandidate(testUser, Pageable.unpaged());
 
         assertThat(result).isNotEmpty();
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().getFirst().getCandidate().getUsername()).isEqualTo(testUser.getUsername());
+        assertThat(result.getContent().getFirst().getCandidate().getEmail()).isEqualTo(testUser.getEmail());
         assertThat(result.getContent().getFirst().getJob().getId()).isEqualTo(testJob.getId());
     }
 
@@ -115,7 +153,7 @@ public class JobApplicationRepositoryTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Should return job application when application exist")
     void findByJobAndCandidate_whenApplicationExist_shouldReturnJobApplication() {
-        JobApplication application = createJobApplication(testUser, testJob);
+        JobApplication application = createJobApplication(testUser, testJob, testResume);
         jobApplicationRepository.save(application);
 
         Optional<JobApplication> result = jobApplicationRepository.findByJobAndCandidate(testJob, testUser);
@@ -130,9 +168,9 @@ public class JobApplicationRepositoryTest extends AbstractIntegrationTest {
     @DisplayName("Should respect pagination for applications by candidate")
     void findByCandidate_withPagination_shouldReturnPaginatedResults() {
         for (int i = 0; i < 5; i++) {
-            Job job = createJob(testUser, true);
+            Job job = createJob(testUser, testCompany, true);
             jobRepository.save(job);
-            JobApplication application = createJobApplication(testUser, job);
+            JobApplication application = createJobApplication(testUser, job, testResume);
             jobApplicationRepository.save(application);
         }
 
@@ -149,7 +187,7 @@ public class JobApplicationRepositoryTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Should return job application when application exists")
     void findByJobAndCandidate_whenApplicationExists_shouldReturnJobApplication() {
-        JobApplication application = createJobApplication(testUser, testJob);
+        JobApplication application = createJobApplication(testUser, testJob, testResume);
         jobApplicationRepository.save(application);
 
         Optional<JobApplication> result = jobApplicationRepository.findByJobAndCandidate(testJob, testUser);

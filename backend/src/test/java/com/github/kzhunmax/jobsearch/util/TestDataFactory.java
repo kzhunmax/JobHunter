@@ -8,9 +8,7 @@ import com.github.kzhunmax.jobsearch.job.dto.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.job.model.Job;
 import com.github.kzhunmax.jobsearch.job.model.JobApplication;
 import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
-import com.github.kzhunmax.jobsearch.shared.enums.ApplicationStatus;
-import com.github.kzhunmax.jobsearch.shared.enums.AuthProvider;
-import com.github.kzhunmax.jobsearch.shared.enums.Role;
+import com.github.kzhunmax.jobsearch.shared.enums.*;
 import com.github.kzhunmax.jobsearch.user.dto.UserLoginDTO;
 import com.github.kzhunmax.jobsearch.user.dto.UserRegistrationDTO;
 import com.github.kzhunmax.jobsearch.user.dto.UserResponseDTO;
@@ -21,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 public class TestDataFactory {
@@ -29,8 +28,6 @@ public class TestDataFactory {
     public static final Long NON_EXISTENT_ID = 99L;
     public static final String TEST_EMAIL = "user@example.com";
     public static final String NON_EXISTENT_EMAIL = "unknown@example.com";
-    public static final String INVALID_EMAIL = "invalid-email";
-    public static final String USER_NOT_FOUND_MESSAGE = "User not found: ";
     public static final String JOB_NOT_FOUND_MESSAGE = "Job with id %d not found";
     public static final String VALID_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTYyNTA0ODAwMCwiZXhwIjoxNjI1MDQ4MTAwfQ.signature";
     public static final String ACCESS_TOKEN = "access-token";
@@ -38,16 +35,23 @@ public class TestDataFactory {
     public static final Long JWT_EXPIRATION = 3600000L;
     public static final Long REFRESH_EXPIRATION = 7200000L;
 
+    public static final String TEST_TITLE = "Java Developer";
+    public static final String TEST_DESCRIPTION = "Develop Java apps";
+    public static final String TEST_LOCATION = "New York";
+    public static final Double TEST_SALARY = 5000.0;
+    public static final String TEST_COMPANY_NAME = "TestCo";
+    public static final String TEST_COVER_LETTER = "Cover Letter";
     public static final LocalDate FIXED_DEADLINE = LocalDate.of(2025, 12, 31);
     public static final Instant FIXED_APPLIED_AT = Instant.parse("2025-01-01T00:00:00Z");
 
     public static User createUser(Long id, String email) {
+
         return User.builder()
                 .id(id)
                 .email(email)
                 .password("Password123")
                 .provider(AuthProvider.LOCAL)
-                .roles(Set.of(Role.ROLE_CANDIDATE))
+                .roles(new HashSet<>(Set.of(Role.ROLE_CANDIDATE)))
                 .build();
     }
 
@@ -56,25 +60,17 @@ public class TestDataFactory {
                 .email(email)
                 .password("Password123")
                 .provider(AuthProvider.LOCAL)
-                .roles(Set.of(Role.ROLE_CANDIDATE))
+                .roles(new HashSet<>(Set.of(Role.ROLE_CANDIDATE)))
                 .build();
     }
 
-    public static User createUser(String email, Set<Role> roles) {
-        return User.builder()
-                .email(email)
-                .password("Password123")
-                .provider(AuthProvider.LOCAL)
-                .roles(roles != null ? roles : Set.of(Role.ROLE_CANDIDATE))
-                .build();
-    }
-
-    public static User createUserWithInvalidEmail(String invalidEmail) {
-        return User.builder()
-                .email(invalidEmail)
-                .password("Password123")
-                .provider(AuthProvider.LOCAL)
-                .roles(Set.of(Role.ROLE_CANDIDATE))
+    public static UserProfile createUserProfile(User user) {
+        return UserProfile.builder()
+                .profileType(ProfileType.RECRUITER)
+                .user(user)
+                .fullName("Test User")
+                .country(Country.USA)
+                .activityStatus(ActivityStatus.ACTIVE)
                 .build();
     }
 
@@ -82,32 +78,38 @@ public class TestDataFactory {
         return Company.builder()
                 .id(id)
                 .name(name)
-                .location("New York")
+                .location(TEST_LOCATION)
+                .build();
+    }
+
+    public static Company createCompany(String name) {
+        return Company.builder()
+                .name(name)
+                .location(TEST_LOCATION)
                 .build();
     }
 
     public static Job createJob(Long id, User user, Company company, boolean isActive) {
         return Job.builder()
                 .id(id)
-                .title("Java Dev")
-                .description("Backend dev")
+                .title(TEST_TITLE)
+                .description(TEST_DESCRIPTION)
                 .company(company)
-                .location("New York")
-                .salary(5000.0)
+                .location(TEST_LOCATION)
+                .salary(TEST_SALARY)
                 .applicationDeadline(FIXED_DEADLINE)
                 .active(isActive)
                 .postedBy(user)
                 .build();
     }
 
-
     public static Job createJob(User user, Company company, boolean isActive) {
         return Job.builder()
-                .title("Java Dev")
-                .description("Backend dev")
+                .title(TEST_TITLE)
+                .description(TEST_DESCRIPTION)
                 .company(company)
-                .location("New York")
-                .salary(5000.0)
+                .location(TEST_LOCATION)
+                .salary(TEST_SALARY)
                 .applicationDeadline(FIXED_DEADLINE)
                 .active(isActive)
                 .postedBy(user)
@@ -116,10 +118,10 @@ public class TestDataFactory {
 
     public static Job createInvalidJob(User user, Company company) {
         return Job.builder()
-                .title("Java Dev")
-                .description("Backend dev")
+                .title(TEST_TITLE)
+                .description(TEST_DESCRIPTION)
                 .company(company)
-                .location("New York")
+                .location(TEST_LOCATION)
                 .salary(-100.0)
                 .applicationDeadline(LocalDate.of(2025, 1, 1))
                 .active(true)
@@ -136,6 +138,14 @@ public class TestDataFactory {
                 .build();
     }
 
+    public static Resume createResume(UserProfile profile) {
+        return Resume.builder()
+                .userProfile(profile)
+                .title("my_resume.pdf")
+                .fileUrl("http://fake.url/my_resume.pdf")
+                .build();
+    }
+
     public static JobApplication createJobApplication(User user, Job job, Resume resume) {
         return JobApplication.builder()
                 .job(job)
@@ -143,7 +153,7 @@ public class TestDataFactory {
                 .resume(resume)
                 .status(ApplicationStatus.APPLIED)
                 .appliedAt(FIXED_APPLIED_AT)
-                .coverLetter("Cover Letter")
+                .coverLetter(TEST_COVER_LETTER)
                 .build();
     }
 
@@ -155,7 +165,7 @@ public class TestDataFactory {
                 .resume(resume)
                 .status(ApplicationStatus.APPLIED)
                 .appliedAt(FIXED_APPLIED_AT)
-                .coverLetter("Cover Letter")
+                .coverLetter(TEST_COVER_LETTER)
                 .build();
     }
 
@@ -166,7 +176,7 @@ public class TestDataFactory {
                 .resume(resume)
                 .status(ApplicationStatus.REJECTED)
                 .appliedAt(FIXED_APPLIED_AT)
-                .coverLetter("Cover Letter")
+                .coverLetter(TEST_COVER_LETTER)
                 .build();
     }
 
@@ -177,39 +187,38 @@ public class TestDataFactory {
     public static JobApplicationResponseDTO createJobApplicationResponseDTO(JobApplication app) {
         return new JobApplicationResponseDTO(
                 app.getId(),
-                app.getJob().getId(),
-                app.getJob().getTitle(),
-                app.getJob().getCompany().getName(),
-                app.getCandidate().getEmail(),
-                app.getCandidate().getProfile().getId(),
-                app.getStatus().name(),
-                app.getAppliedAt().toString(),
+                app.getJob() != null ? app.getJob().getId() : null,
+                app.getJob() != null ? app.getJob().getTitle() : null,
+                app.getJob() != null && app.getJob().getCompany() != null ? app.getJob().getCompany().getName() : null,
+                app.getCandidate() != null ? app.getCandidate().getEmail() : null,
+                app.getCandidate() != null && app.getCandidate().getProfile() != null ? app.getCandidate().getProfile().getId() : null,
+                app.getStatus() != null ? app.getStatus().name() : null,
+                app.getAppliedAt() != null ? app.getAppliedAt().toString() : null,
                 app.getCoverLetter(),
-                app.getResume().getFileUrl()
+                app.getResume() != null ? app.getResume().getFileUrl() : null
         );
     }
 
-
     public static JobRequestDTO createJobRequest(Long companyId) {
-        return new JobRequestDTO("Java Dev", "Backend dev", companyId, "New York", 5000.0, FIXED_DEADLINE);
+        return new JobRequestDTO(TEST_TITLE, TEST_DESCRIPTION, companyId, TEST_LOCATION, TEST_SALARY, FIXED_DEADLINE);
     }
 
     public static JobResponseDTO createJobResponse(Long id, String companyName, String email) {
-        return new JobResponseDTO(id, "Java Dev", "Backend dev", companyName, "New York", 5000.0, FIXED_DEADLINE, true, email);
+        return new JobResponseDTO(id, TEST_TITLE, TEST_DESCRIPTION, companyName, TEST_LOCATION, TEST_SALARY, FIXED_DEADLINE, true, email);
     }
 
     public static JobRequestDTO createInvalidJobRequest() {
-        return new JobRequestDTO("", "Backend dev", null, "", -100.0, LocalDate.of(2025, 1, 1));
+        return new JobRequestDTO("", TEST_DESCRIPTION, null, "", -100.0, LocalDate.of(2025, 1, 1));
     }
 
     public static JobRequestDTO updateJobRequest(Long companyId) {
         return new JobRequestDTO("Updated title", "Updated description",
-                companyId, "Updated location", 5000.0, FIXED_DEADLINE);
+                companyId, "Updated location", TEST_SALARY, FIXED_DEADLINE);
     }
 
     public static JobResponseDTO updateJobResponse(Long id, String companyName, String email) {
         return new JobResponseDTO(id, "Updated title", "Updated description",
-                companyName, "Updated location", 5000.0, FIXED_DEADLINE, true, email);
+                companyName, "Updated location", TEST_SALARY, FIXED_DEADLINE, true, email);
     }
 
     public static UserRegistrationDTO createUserRegistrationDTO() {
