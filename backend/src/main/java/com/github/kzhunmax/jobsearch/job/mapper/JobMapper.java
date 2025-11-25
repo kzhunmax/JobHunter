@@ -16,12 +16,21 @@ public abstract class JobMapper {
     @Autowired
     protected RepositoryHelper repositoryHelper;
 
-    @BeanMapping(nullValueMappingStrategy = NullValueMappingStrategy.RETURN_NULL)
+    public Job toEntity(JobRequestDTO dto, User user) {
+        if (dto == null) {
+            return null;
+        }
+        return toEntityInternal(dto, user);
+    }
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "applications", ignore = true)
     @Mapping(target = "postedBy", source = "user")
     @Mapping(target = "company", source = "dto.companyId", qualifiedByName = "mapCompanyFromId")
-    public abstract Job toEntity(JobRequestDTO dto, User user);
+    protected abstract Job toEntityInternal(JobRequestDTO dto, User user);
 
     @Mapping(target = "postedBy", source = "job.postedBy.email")
     @Mapping(target = "company", source = "job.company.name")

@@ -4,9 +4,9 @@ import com.redis.testcontainers.RedisContainer;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public abstract class AbstractIntegrationTest {
@@ -15,7 +15,7 @@ public abstract class AbstractIntegrationTest {
     public static final RedisContainer REDIS = new RedisContainer(DockerImageName.parse("redis:8.2.2-alpine"));
 
     @ServiceConnection
-    public static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18-alpine");
+    public static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18-alpine");
 
     @ServiceConnection
     public static final KafkaContainer KAFKA = new KafkaContainer(DockerImageName.parse("apache/kafka:4.0.1"));

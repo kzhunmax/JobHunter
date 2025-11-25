@@ -46,6 +46,8 @@ public class JobMapperTest {
     @Test
     @DisplayName("Should map to entity correctly when valid DTO and user provided")
     void toEntity_whenValidDataProvided_shouldMapAllFieldsCorrectly() {
+        when(repositoryHelper.findCompanyById(TEST_ID)).thenReturn(testCompany);
+
         Job result = mapper.toEntity(validRequestDTO, testUser);
 
         assertThat(result).isNotNull();
@@ -69,6 +71,8 @@ public class JobMapperTest {
     @Test
     @DisplayName("Should handle null user gracefully (postedBy remains null)")
     void toEntity_whenUserIsNull_shouldHandleNullUserGracefully() {
+        when(repositoryHelper.findCompanyById(TEST_ID)).thenReturn(testCompany);
+
         Job result = mapper.toEntity(validRequestDTO, null);
 
         assertThat(result).isNotNull();

@@ -27,6 +27,9 @@ public abstract class UserProfileMapper {
     @Autowired
     private RepositoryHelper repositoryHelper;
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "activityStatus", constant = "ACTIVE")
     @Mapping(target = "profileType", source = "user", qualifiedByName = "determineProfileType")
     @Mapping(target = "resumes", ignore = true)

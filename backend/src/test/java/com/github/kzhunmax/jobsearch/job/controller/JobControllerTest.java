@@ -7,22 +7,21 @@ import com.github.kzhunmax.jobsearch.job.dto.JobResponseDTO;
 import com.github.kzhunmax.jobsearch.job.model.es.JobDocument;
 import com.github.kzhunmax.jobsearch.job.service.JobService;
 import com.github.kzhunmax.jobsearch.job.service.search.JobSearchService;
-import com.github.kzhunmax.jobsearch.security.*;
+import com.github.kzhunmax.jobsearch.security.JobSecurityService;
+import com.github.kzhunmax.jobsearch.security.JwtService;
+import com.github.kzhunmax.jobsearch.security.PricingPlan;
+import com.github.kzhunmax.jobsearch.security.RateLimitingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
@@ -40,9 +39,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(JobController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@EnableMethodSecurity
+@WebMvcTest(controllers = JobController.class)
+@Import(JobControllerTestConfig.class)
 @DisplayName("JobController Tests")
 class JobControllerTest {
     @Autowired
@@ -60,16 +58,8 @@ class JobControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public JobSecurityService jobSecurityService() {
-            return Mockito.mock(JobSecurityService.class);
-        }
-    }
-
-    @Autowired
-    private JobSecurityService jobSecurityService;
+    @MockitoBean
+    JobSecurityService jobSecurityService;
 
     @Autowired
     private ObjectMapper objectMapper;
