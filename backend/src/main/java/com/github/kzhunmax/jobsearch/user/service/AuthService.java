@@ -5,6 +5,7 @@ import com.github.kzhunmax.jobsearch.exception.InvalidOrExpiredTokenException;
 import com.github.kzhunmax.jobsearch.security.JwtService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsServiceImpl;
 import com.github.kzhunmax.jobsearch.shared.CookieService;
+import com.github.kzhunmax.jobsearch.shared.RepositoryHelper;
 import com.github.kzhunmax.jobsearch.shared.enums.AuthProvider;
 import com.github.kzhunmax.jobsearch.shared.enums.Role;
 import com.github.kzhunmax.jobsearch.shared.event.EventType;
@@ -50,6 +51,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final UserEventProducer userEventProducer;
     private final AuthenticationManager authenticationManager;
+    private final RepositoryHelper repositoryHelper;
 
 
     @Transactional
@@ -188,5 +190,25 @@ public class AuthService {
         }
 
         return xfHeader.split(",")[0].trim();
+    }
+
+    @Transactional
+    public JwtResponse switchUserRole(Long id, HttpServletResponse response) {
+        User user = repositoryHelper.findUserById(id);
+
+        Set<Role> roles = user.getRoles();
+        if (roles.contains(Role.ROLE_RECRUITER)) {
+            roles.remove(Role.ROLE_RECRUITER);
+            roles.add(Role.ROLE_CANDIDATE);
+        } else {
+            roles.remove(Role.ROLE_CANDIDATE);
+            roles.add(Role.ROLE_RECRUITER);
+        }
+
+        user.setRoles(roles);
+        User savedUser = userRepository.save(user);
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
+        return issueTokens(userDetails, response);
     }
 }

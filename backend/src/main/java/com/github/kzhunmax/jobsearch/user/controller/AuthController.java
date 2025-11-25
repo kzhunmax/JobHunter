@@ -3,6 +3,7 @@ package com.github.kzhunmax.jobsearch.user.controller;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
 import com.github.kzhunmax.jobsearch.security.PricingPlan;
 import com.github.kzhunmax.jobsearch.security.RateLimitingService;
+import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
 import com.github.kzhunmax.jobsearch.user.dto.*;
 import com.github.kzhunmax.jobsearch.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -248,5 +250,15 @@ public class AuthController {
     ) {
         authService.resendVerification(dto.email());
         return ApiResponse.success("If an unverified account with this email exists, a new verification link has been sent.");
+    }
+
+    @PostMapping("/switch-role")
+    @Operation(summary = "Switch between Candidate and Recruiter", description = "Toggles the role and returns NEW tokens")
+    public ResponseEntity<ApiResponse<JwtResponse>> switchRole(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            HttpServletResponse response
+    ) {
+        JwtResponse newTokens = authService.switchUserRole(userDetails.getId(), response);
+        return ApiResponse.success(newTokens);
     }
 }
