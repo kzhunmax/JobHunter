@@ -6,15 +6,18 @@ import com.github.kzhunmax.jobsearch.job.model.es.JobDocument;
 import com.github.kzhunmax.jobsearch.job.service.JobService;
 import com.github.kzhunmax.jobsearch.job.service.search.JobSearchService;
 import com.github.kzhunmax.jobsearch.payload.ApiResponse;
+import com.github.kzhunmax.jobsearch.security.PricingPlan;
 import com.github.kzhunmax.jobsearch.security.RateLimitingService;
 import com.github.kzhunmax.jobsearch.security.UserDetailsImpl;
 import com.github.kzhunmax.jobsearch.user.model.User;
+import com.github.kzhunmax.jobsearch.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,7 @@ public class JobController {
     private final JobService jobService;
     private final JobSearchService jobSearchService;
     private final RateLimitingService rateLimitingService;
+    private final AuthService authService;
 
     @PreAuthorize("hasRole('RECRUITER')")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -258,14 +262,19 @@ public class JobController {
             @Parameter(description = "Optional company filter", example = "TechCorp") @RequestParam(required = false) String company,
             @PageableDefault(size = 20) Pageable pageable,
             PagedResourcesAssembler<JobDocument> pagedAssembler,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            HttpServletRequest request
     ) {
-        User user = userDetails.getUser();
-        rateLimitingService.consumeToken(user.getApiKey(), user.getPricingPlan(), "API_KEY");
+        if (userDetails != null) {
+            User user = userDetails.getUser();
+            rateLimitingService.consumeToken(user.getApiKey(), user.getPricingPlan(), "API_KEY");
+        } else {
+            String ipAddress = authService.getClientIp(request);
+            rateLimitingService.consumeToken(ipAddress, PricingPlan.FREE, "IP_ADDRESS");
+        }
         log.info("Searching jobs - query={}, location={}, company={}", query, location, company);
         PagedModel<EntityModel<JobDocument>> results = jobSearchService.searchJobs(query, location, company, pageable, pagedAssembler);
         log.info("Search completed with total of - {} results", results.getMetadata() != null ? results.getMetadata().getTotalElements() : 0);
         return ApiResponse.success(results);
     }
-
 }
