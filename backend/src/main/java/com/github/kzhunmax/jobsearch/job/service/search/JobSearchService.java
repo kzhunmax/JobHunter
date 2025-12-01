@@ -13,6 +13,7 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.stream.Collectors;
 
@@ -27,13 +28,17 @@ public class JobSearchService {
                 .withQuery(q -> q
                         .bool(b -> {
                             // Full-text search on title and description
-                            b.must(m -> m
-                                    .multiMatch(mm -> mm
-                                            .query(query)
-                                            .fields("title", "description")
-                                            .fuzziness("AUTO")
-                                    )
-                            );
+                            if (StringUtils.hasText(query)) {
+                                b.must(m -> m
+                                        .multiMatch(mm -> mm
+                                                .query(query)
+                                                .fields("title", "description")
+                                                .fuzziness("AUTO")
+                                        )
+                                );
+                            } else {
+                                b.must(m -> m.matchAll(ma -> ma));
+                            }
 
                             // Filter by location if provided
                             if (location != null && !location.isBlank()) {

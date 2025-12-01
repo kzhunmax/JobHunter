@@ -257,7 +257,7 @@ public class JobController {
             )
     })
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<JobDocument>>>> searchJobs(
-            @Parameter(description = "Search keyword", example = "Java") @RequestParam String query,
+            @Parameter(description = "Search keyword", example = "Java") @RequestParam(required = false) String query,
             @Parameter(description = "Optional location filter", example = "Remote") @RequestParam(required = false) String location,
             @Parameter(description = "Optional company filter", example = "TechCorp") @RequestParam(required = false) String company,
             @PageableDefault(size = 20) Pageable pageable,
