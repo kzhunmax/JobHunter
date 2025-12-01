@@ -26,10 +26,10 @@ public class JobDocument {
     @Field(type = FieldType.Text)
     private String description;
 
-    @Field(type = FieldType.Keyword)
+    @Field(type = FieldType.Text)
     private String company;
 
-    @Field(type = FieldType.Keyword)
+    @Field(type = FieldType.Text)
     private String location;
 
     @Field(type = FieldType.Double)

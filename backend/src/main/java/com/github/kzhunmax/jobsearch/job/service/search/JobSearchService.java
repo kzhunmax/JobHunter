@@ -41,12 +41,12 @@ public class JobSearchService {
                             }
 
                             // Filter by location if provided
-                            if (location != null && !location.isBlank()) {
+                            if (StringUtils.hasText(location)) {
                                 b.filter(f -> f.match(t -> t.field("location").query(location)));
                             }
 
                             // Filter by company if provided
-                            if (company != null && !company.isBlank()) {
+                            if (StringUtils.hasText(company)) {
                                 b.filter(f -> f.match(t -> t.field("company").query(company)));
                             }
 
